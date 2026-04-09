@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AccountStatusMail;
 use App\Mail\WelcomeMail;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -82,6 +83,11 @@ class UserController extends Controller
     public function toggleStatus(User $utilisateur)
     {
         $utilisateur->update(['is_active' => !$utilisateur->is_active]);
+        
+        // Send email notification
+        $changedByName = Auth::user()->name;
+        Mail::to($utilisateur->email)->send(new AccountStatusMail($utilisateur->name, $utilisateur->is_active, $changedByName));
+        
         $message = $utilisateur->is_active ? 'Utilisateur activé.' : 'Utilisateur désactivé.';
         return back()->with('success', $message);
     }
