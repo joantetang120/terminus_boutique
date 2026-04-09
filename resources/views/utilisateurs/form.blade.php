@@ -67,7 +67,7 @@
                 @php
                     $pName = $mKey . '.' . $act;
                     $pExists = in_array($pName, $allPerms);
-                    $pChecked = isset($utilisateur) ? $utilisateur->hasPermissionTo($pName) : false;
+                    $pChecked = isset($utilisateur) && $pExists ? $utilisateur->hasPermissionTo($pName) : false;
                     /* cancel doesn't exist for ghost, user, audit, product */
                     $showCheckbox = $pExists && !($act === 'cancel' && in_array($mKey, ['ghost', 'user', 'audit', 'product']));
                 @endphp
@@ -86,7 +86,7 @@
             @php
                 $approvePerm = 'compta.approve';
                 $approveExists = in_array($approvePerm, $allPerms);
-                $approveChecked = isset($utilisateur) ? $utilisateur->hasPermissionTo($approvePerm) : false;
+                $approveChecked = isset($utilisateur) && $approveExists ? $utilisateur->hasPermissionTo($approvePerm) : false;
             @endphp
             <div style="margin-top:12px;padding:12px 16px;background:#F8FAFC;border-radius:8px;border:1px solid #E2E8F0;display:flex;align-items:center;gap:12px;">
                 <input type="checkbox" name="permissions[]" value="{{ $approvePerm }}" {{ ($approveExists && $approveChecked) ? 'checked' : '' }} id="perm_approve" style="width:18px;height:18px;cursor:pointer;">

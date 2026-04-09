@@ -14,8 +14,10 @@
         </li>
     </ul>
 
+    @canany(['facture.view', 'ghost.view'])
     <div class="sidebar-section-label" x-show="expanded" x-cloak>Ventes</div>
     <ul class="sidebar-nav">
+        @can('facture.view')
         <li>
             <a href="{{ route('factures.index') }}" class="{{ request()->routeIs('factures.*') ? 'active' : '' }}"
                :title="!expanded ? 'Factures' : ''">
@@ -23,6 +25,7 @@
                 <span x-show="expanded" x-cloak>Factures</span>
             </a>
         </li>
+        @endcan
         @can('ghost.view')
         <li>
             <a href="{{ route('ghost.index') }}" class="{{ request()->routeIs('ghost.*') ? 'active' : '' }}"
@@ -33,16 +36,21 @@
         </li>
         @endcan
     </ul>
+    @endcanany
 
+    @canany(['stock.view', 'product.view'])
     <div class="sidebar-section-label" x-show="expanded" x-cloak>Inventaire</div>
     <ul class="sidebar-nav">
+        @can('stock.view')
         <li>
             <a href="{{ route('stock.index') }}" class="{{ request()->routeIs('stock.*') ? 'active' : '' }}"
                :title="!expanded ? 'Stock' : ''">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
                 <span x-show="expanded" x-cloak>Stock</span>
             </a>
         </li>
+        @endcan
+        @can('product.view')
         <li>
             <a href="{{ route('produits.index') }}" class="{{ request()->routeIs('produits.*') ? 'active' : '' }}"
                :title="!expanded ? 'Produits' : ''">
@@ -50,8 +58,11 @@
                 <span x-show="expanded" x-cloak>Produits</span>
             </a>
         </li>
+        @endcan
     </ul>
+    @endcanany
 
+    @can('compta.view')
     <div class="sidebar-section-label" x-show="expanded" x-cloak>Finances</div>
     <ul class="sidebar-nav">
         <li>
@@ -62,6 +73,7 @@
             </a>
         </li>
     </ul>
+    @endcan
 
     @canany(['user.view', 'audit.view'])
     <div class="sidebar-section-label" x-show="expanded" x-cloak>Administration</div>
