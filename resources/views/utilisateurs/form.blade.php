@@ -21,10 +21,11 @@
                 @error('email')<div class="form-error">{{ $message }}</div>@enderror
             </div>
 
+            @if(!isset($utilisateur))
             <div class="form-group">
-                <label class="form-label" for="password">Mot de passe {{ isset($utilisateur) ? '(laisser vide si inchangé)' : '' }}</label>
+                <label class="form-label" for="password">Mot de passe</label>
                 <div style="position:relative;">
-                    <input class="form-input" type="password" id="password" name="password" {{ !isset($utilisateur) ? 'required' : '' }} style="padding-right:40px;">
+                    <input class="form-input" type="password" id="password" name="password" required style="padding-right:40px;">
                     <button type="button" onclick="togglePassword('password', this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;" aria-label="Afficher le mot de passe">
                         <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -34,8 +35,6 @@
                 </div>
                 @error('password')<div class="form-error">{{ $message }}</div>@enderror
             </div>
-
-            @if(!isset($utilisateur))
             <div class="form-group">
                 <label class="form-label" for="password_confirmation">Confirmer mot de passe</label>
                 <div style="position:relative;">
