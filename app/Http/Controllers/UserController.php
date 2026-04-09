@@ -66,7 +66,6 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $utilisateur->id,
-            'password' => 'nullable|min:6',
             'permissions' => 'array',
         ]);
 
@@ -74,10 +73,6 @@ class UserController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
         ]);
-
-        if (!empty($validated['password'])) {
-            $utilisateur->update(['password' => Hash::make($validated['password'])]);
-        }
 
         $utilisateur->syncPermissions($validated['permissions'] ?? []);
 
