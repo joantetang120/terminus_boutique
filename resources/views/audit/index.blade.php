@@ -26,7 +26,13 @@
                     <td>{{ $activity->created_at->format('d/m/Y H:i:s') }}</td>
                     <td>{{ $activity->causer?->name ?? 'Système' }}</td>
                     <td><span class="badge badge-primary">{{ $activity->description }}</span></td>
-                    <td>{{ class_basename($activity->subject_type) }} #{{ $activity->subject_id }}</td>
+                    <td>
+                        @if(class_basename($activity->subject_type) === 'User' && $activity->subject)
+                            {{ $activity->subject->name }}
+                        @else
+                            {{ class_basename($activity->subject_type) }} #{{ $activity->subject_id }}
+                        @endif
+                    </td>
                     <td>
                         @if($activity->properties?->has('old') || $activity->properties?->has('attributes'))
                         <button class="btn btn-secondary btn-sm" x-data @click="$toggle('detail-{{ $activity->id }}')">Voir détails</button>
