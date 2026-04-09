@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\WelcomeMail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Spatie\Permission\Models\Permission;
 
 class UserController extends Controller
@@ -43,6 +45,10 @@ class UserController extends Controller
         if (!empty($validated['permissions'])) {
             $user->syncPermissions($validated['permissions']);
         }
+
+        // Send welcome email to the new user
+        $createdByName = Auth::user()->name;
+        Mail::to($user->email)->send(new WelcomeMail($user->name, $createdByName));
 
         return redirect()->route('utilisateurs.index')->with('success', 'Utilisateur créé avec succès.');
     }
