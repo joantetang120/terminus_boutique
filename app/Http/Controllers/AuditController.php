@@ -10,7 +10,7 @@ class AuditController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Activity::with(['causer']);
+        $query = Activity::with(['causer', 'subject']);
 
         if ($request->filled('user_id')) {
             $query->where('causer_id', $request->user_id);
