@@ -63,31 +63,84 @@ class DatabaseSeeder extends Seeder
         \App\Models\Product::firstOrCreate(
             ['name' => 'Produit A'],
             [
+                'description' => 'Description du produit A',
                 'unit' => 'carton',
                 'current_stock' => 100,
                 'alert_threshold' => 10,
                 'is_active' => true,
+                'created_by' => $admin->id,
             ]
         );
 
         \App\Models\Product::firstOrCreate(
             ['name' => 'Produit B'],
             [
+                'description' => 'Description du produit B',
                 'unit' => 'boite',
                 'current_stock' => 50,
                 'alert_threshold' => 5,
                 'is_active' => true,
+                'created_by' => $admin->id,
             ]
         );
 
         \App\Models\Product::firstOrCreate(
             ['name' => 'Produit C'],
             [
+                'description' => 'Description du produit C',
                 'unit' => 'paquet',
                 'current_stock' => 200,
                 'alert_threshold' => 20,
                 'is_active' => true,
+                'created_by' => $admin->id,
             ]
         );
+
+        // Get product IDs for stock movements
+        $productA = \App\Models\Product::where('name', 'Produit A')->first();
+        $productB = \App\Models\Product::where('name', 'Produit B')->first();
+        $productC = \App\Models\Product::where('name', 'Produit C')->first();
+
+        // Create sample stock movements (entries)
+        \App\Models\StockMovement::create([
+            'product_id' => $productA->id,
+            'type' => 'entry',
+            'quantity' => 100,
+            'reference_type' => null,
+            'reference_id' => null,
+            'note' => 'Stock initial',
+            'created_by' => $admin->id,
+        ]);
+
+        \App\Models\StockMovement::create([
+            'product_id' => $productB->id,
+            'type' => 'entry',
+            'quantity' => 50,
+            'reference_type' => null,
+            'reference_id' => null,
+            'note' => 'Stock initial',
+            'created_by' => $admin->id,
+        ]);
+
+        \App\Models\StockMovement::create([
+            'product_id' => $productC->id,
+            'type' => 'entry',
+            'quantity' => 200,
+            'reference_type' => null,
+            'reference_id' => null,
+            'note' => 'Stock initial',
+            'created_by' => $admin->id,
+        ]);
+
+        // Create sample stock exit
+        \App\Models\StockMovement::create([
+            'product_id' => $productA->id,
+            'type' => 'exit',
+            'quantity' => 20,
+            'reference_type' => null,
+            'reference_id' => null,
+            'note' => 'Vente test',
+            'created_by' => $admin->id,
+        ]);
     }
 }
