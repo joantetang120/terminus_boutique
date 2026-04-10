@@ -4,12 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 class StockMovement extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, SoftDeletes;
 
     protected $fillable = [
         'product_id',
@@ -27,7 +28,8 @@ class StockMovement extends Model
     protected function casts(): array
     {
         return [
-            'quantity' => 'decimal:2',
+            'type' => 'string',
+            'quantity' => 'integer',
             'cancelled_at' => 'datetime',
         ];
     }
@@ -54,8 +56,18 @@ class StockMovement extends Model
         return $this->belongsTo(User::class, 'cancelled_by');
     }
 
-    public function isCancelled(): bool
+    public function getIsCancelledAttribute(): bool
     {
         return $this->type === 'cancel';
+    }
+
+    public function scopeForProduct($query, $id)
+    {
+        return $query->where('product_id', $id);
+    }
+
+    public function scopeOfType($query, $type)
+    {
+        return $query->where('type', $type);
     }
 }
