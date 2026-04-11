@@ -54,6 +54,11 @@ class Product extends Model
         return $this->current_stock <= $this->alert_threshold;
     }
 
+    public function isLowStock(): bool
+    {
+        return $this->current_stock <= $this->alert_threshold;
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
