@@ -5,13 +5,17 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Models\Product;
+use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ProduitController extends Controller
 {
-    public function __construct()
+    protected StockService $stockService;
+
+    public function __construct(StockService $stockService)
     {
+        $this->stockService = $stockService;
         $this->middleware('can:product.view')->only(['index', 'show']);
         $this->middleware('can:product.create')->only(['create', 'store']);
         $this->middleware('can:product.edit')->only(['edit', 'update']);
@@ -83,12 +87,12 @@ class ProduitController extends Controller
 
         // Create initial stock movement if stock > 0
         if ($validated['current_stock'] > 0) {
-            $product->stockMovements()->create([
-                'type' => 'entry',
-                'quantity' => $validated['current_stock'],
-                'note' => 'Stock initial',
-                'created_by' => Auth::id(),
-            ]);
+            $this->stockService->recordEntry(
+                $product,
+                $validated['current_stock'],
+                'Stock initial',
+                Auth::user()
+            );
         }
 
         activity('product')
