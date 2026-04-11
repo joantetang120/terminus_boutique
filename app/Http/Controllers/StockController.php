@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StockEntryRequest;
+use App\Http\Requests\StockExitRequest;
 use App\Models\StockMovement;
 use App\Models\Product;
 use App\Services\StockService;
@@ -41,14 +43,9 @@ class StockController extends Controller
         return view('stock.index', compact('products', 'movements'));
     }
 
-    public function entree(Request $request)
+    public function entree(StockEntryRequest $request)
     {
-        $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
-            'note' => 'nullable|string',
-        ]);
-
+        $validated = $request->validated();
         $product = Product::findOrFail($validated['product_id']);
 
         try {
@@ -65,14 +62,9 @@ class StockController extends Controller
         }
     }
 
-    public function sortie(Request $request)
+    public function sortie(StockExitRequest $request)
     {
-        $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
-            'note' => 'required|string|min:5',
-        ]);
-
+        $validated = $request->validated();
         $product = Product::findOrFail($validated['product_id']);
 
         try {
