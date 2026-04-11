@@ -83,8 +83,6 @@ class StockController extends Controller
 
     public function annuler(Request $request, StockMovement $mouvement)
     {
-        $this->authorize('stock.cancel');
-
         $validated = $request->validate([
             'cancel_reason' => 'required|string|min:10',
         ]);
