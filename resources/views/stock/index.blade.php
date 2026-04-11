@@ -7,10 +7,12 @@
                     <a href="{{ route('dashboard') }}">Accueil</a> > Inventaire > Stock
                 </div>
             </div>
+            @can('stock.create')
             <div style="display:flex;gap:8px;">
                 <button class="btn btn-success btn-sm" x-data @click="$dispatch('open-entry-modal')">+ Entrée stock</button>
                 <button class="btn btn-warning btn-sm" style="background:#E67E22;color:white;" x-data @click="$dispatch('open-exit-modal')">+ Sortie manuelle</button>
             </div>
+            @endcan
         </div>
     </div>
 

@@ -78,19 +78,34 @@ class ProduitController extends Controller
 
         $product = Product::create($validated);
 
-        // Create initial stock movement if stock > 0
+        // Create initial stock movement if stock > 0 (without incrementing since product already has the stock)
         if ($validated['current_stock'] > 0) {
-            $this->stockService->recordEntry(
-                $product,
-                $validated['current_stock'],
-                'Stock initial',
-                Auth::user()
-            );
+            \App\Models\StockMovement::create([
+                'product_id' => $product->id,
+                'type' => 'entry',
+                'quantity' => $validated['current_stock'],
+                'note' => 'Stock initial',
+                'created_by' => Auth::id(),
+            ]);
+
+            activity('stock')
+                ->performedOn($product)
+                ->withProperties([
+                    'product_name' => $product->name,
+                    'initial_stock' => $validated['current_stock'],
+                    'unit' => $product->unit,
+                ])
+                ->log('Stock initial: ' . $validated['current_stock'] . ' ' . $product->unit . ' de ' . $product->name);
         }
 
         activity('product')
             ->performedOn($product)
-            ->log('Création du produit : ' . $product->name);
+            ->withProperties([
+                'name' => $product->name,
+                'unit' => $product->unit,
+                'alert_threshold' => $product->alert_threshold,
+            ])
+            ->log('Produit créé: ' . $product->name);
 
         return redirect()->route('produits.index')->with('success', 'Produit créé avec succès.');
     }
@@ -110,7 +125,11 @@ class ProduitController extends Controller
 
         activity('product')
             ->performedOn($produit)
-            ->log('Modification du produit : ' . $produit->name);
+            ->withProperties([
+                'name' => $produit->name,
+                'changes' => $produit->getChanges(),
+            ])
+            ->log('Produit modifié: ' . $produit->name);
 
         return redirect()->route('produits.index')->with('success', 'Produit mis à jour avec succès.');
     }
@@ -118,11 +137,17 @@ class ProduitController extends Controller
     public function destroy(Product $produit)
     {
         $productName = $produit->name;
-        $produit->delete();
+
+        // Check if product has stock movements
+        if ($produit->stockMovements()->count() > 0) {
+            return redirect()->route('produits.index')->with('error', 'Impossible de supprimer : le produit a des mouvements de stock associés.');
+        }
+
+        $produit->forceDelete();
 
         activity('product')
-            ->performedOn($produit)
-            ->log('Suppression du produit : ' . $productName);
+            ->withProperties(['name' => $productName])
+            ->log('Produit supprimé: ' . $productName);
 
         return redirect()->route('produits.index')->with('success', 'Produit supprimé avec succès.');
     }

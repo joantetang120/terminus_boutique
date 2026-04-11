@@ -26,9 +26,14 @@ class StockService
             $product->increment('current_stock', $quantity);
 
             activity('stock')
-                ->performedOn($movement)
-                ->withProperties(['quantity' => $quantity, 'product_id' => $product->id])
-                ->log('Entrée de stock enregistrée');
+                ->performedOn($product)
+                ->withProperties([
+                    'product_name' => $product->name,
+                    'quantity' => $quantity,
+                    'stock_after' => $product->current_stock + $quantity,
+                    'movement_id' => $movement->id,
+                ])
+                ->log('Entrée stock: +' . $quantity . ' ' . $product->name);
 
             return $movement;
         });
@@ -62,10 +67,19 @@ class StockService
 
             $product->decrement('current_stock', $quantity);
 
+            $stockAfter = $product->current_stock - $quantity;
+
             activity('stock')
-                ->performedOn($movement)
-                ->withProperties(['quantity' => $quantity, 'product_id' => $product->id])
-                ->log('Sortie de stock enregistrée');
+                ->performedOn($product)
+                ->withProperties([
+                    'product_name' => $product->name,
+                    'quantity' => $quantity,
+                    'stock_after' => $stockAfter,
+                    'movement_id' => $movement->id,
+                    'reference_type' => $refType,
+                    'reference_id' => $refId,
+                ])
+                ->log('Sortie stock: -' . $quantity . ' ' . $product->name);
 
             return $movement;
         });
@@ -116,13 +130,17 @@ class StockService
             }
 
             activity('stock')
-                ->performedOn($movement)
+                ->performedOn($product)
                 ->withProperties([
+                    'product_name' => $product->name,
                     'cancel_movement_id' => $cancelMovement->id,
+                    'original_movement_id' => $movement->id,
+                    'original_type' => $movement->type,
                     'reason' => $reason,
                     'quantity' => $movement->quantity,
+                    'stock_after' => $product->current_stock,
                 ])
-                ->log('Mouvement de stock annulé');
+                ->log('Annulation: ' . $movement->type . ' de ' . $movement->quantity . ' ' . $product->name . ' - ' . $reason);
 
             return $cancelMovement;
         });
