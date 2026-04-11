@@ -16,14 +16,10 @@ class ProduitController extends Controller
     public function __construct(StockService $stockService)
     {
         $this->stockService = $stockService;
-        $this->middleware('can:product.view')->only(['index', 'show']);
-        $this->middleware('can:product.create')->only(['create', 'store']);
-        $this->middleware('can:product.edit')->only(['edit', 'update']);
     }
 
     public function index(Request $request)
     {
-        $this->authorize('product.view');
 
         $query = Product::query();
 
@@ -56,7 +52,6 @@ class ProduitController extends Controller
 
     public function show(Product $produit)
     {
-        $this->authorize('product.view');
 
         $produit->load(['creator', 'stockMovements' => function ($query) {
             $query->with('createdBy')->latest()->take(50);
@@ -71,14 +66,12 @@ class ProduitController extends Controller
 
     public function create()
     {
-        $this->authorize('product.create');
 
         return view('produits.create');
     }
 
     public function store(StoreProductRequest $request)
     {
-        $this->authorize('product.create');
 
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
@@ -104,14 +97,12 @@ class ProduitController extends Controller
 
     public function edit(Product $produit)
     {
-        $this->authorize('product.edit');
 
         return view('produits.edit', compact('produit'));
     }
 
     public function update(UpdateProductRequest $request, Product $produit)
     {
-        $this->authorize('product.edit');
 
         $validated = $request->validated();
 
@@ -126,8 +117,6 @@ class ProduitController extends Controller
 
     public function destroy(Product $produit)
     {
-        $this->authorize('product.edit');
-
         $productName = $produit->name;
         $produit->delete();
 

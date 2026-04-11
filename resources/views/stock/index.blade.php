@@ -214,7 +214,7 @@
                 <h3>⚠ Confirmer l'annulation</h3>
                 <button @click="open = false" style="background:none;border:none;cursor:pointer;font-size:1.25rem;">&times;</button>
             </div>
-            <form :action="'/stock/' + id + '/annuler'" method="POST">
+            <form :action="'/stock/' + id + '/cancel'" method="POST">
                 @csrf
                 <div class="modal-body">
                     <p style="margin-bottom:16px;color:#64748B;">Annuler le mouvement pour <strong x-text="product"></strong> ?</p>
