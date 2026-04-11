@@ -4,12 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\StockMovement;
 use App\Models\Product;
+use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class StockController extends Controller
 {
+    protected StockService $stockService;
+
+    public function __construct(StockService $stockService)
+    {
+        $this->stockService = $stockService;
+    }
     public function index(Request $request)
     {
         $products = Product::where('is_active', true)
@@ -39,94 +45,68 @@ class StockController extends Controller
     {
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|numeric|min:0.01',
+            'quantity' => 'required|integer|min:1',
             'note' => 'nullable|string',
         ]);
 
-        DB::transaction(function () use ($validated) {
-            StockMovement::create([
-                'product_id' => $validated['product_id'],
-                'type' => 'entry',
-                'quantity' => $validated['quantity'],
-                'note' => $validated['note'] ?? null,
-                'created_by' => Auth::id(),
-            ]);
+        $product = Product::findOrFail($validated['product_id']);
 
-            Product::where('id', $validated['product_id'])
-                ->increment('current_stock', $validated['quantity']);
-        });
+        try {
+            $this->stockService->recordEntry(
+                $product,
+                $validated['quantity'],
+                $validated['note'] ?? '',
+                Auth::user()
+            );
 
-        return back()->with('success', 'Entrée de stock enregistrée.');
+            return back()->with('success', 'Entrée de stock enregistrée.');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 
     public function sortie(Request $request)
     {
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|numeric|min:0.01',
+            'quantity' => 'required|integer|min:1',
             'note' => 'required|string|min:5',
         ]);
 
         $product = Product::findOrFail($validated['product_id']);
 
-        if ($product->current_stock < $validated['quantity']) {
-            return back()->with('error', 'Stock insuffisant pour ce produit.');
+        try {
+            $this->stockService->recordExit(
+                $product,
+                $validated['quantity'],
+                $validated['note'],
+                Auth::user()
+            );
+
+            return back()->with('success', 'Sortie de stock enregistrée.');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
         }
-
-        DB::transaction(function () use ($validated) {
-            StockMovement::create([
-                'product_id' => $validated['product_id'],
-                'type' => 'exit',
-                'quantity' => $validated['quantity'],
-                'note' => $validated['note'],
-                'created_by' => Auth::id(),
-            ]);
-
-            Product::where('id', $validated['product_id'])
-                ->decrement('current_stock', $validated['quantity']);
-        });
-
-        return back()->with('success', 'Sortie de stock enregistrée.');
     }
 
     public function annuler(Request $request, StockMovement $mouvement)
     {
         $this->authorize('stock.cancel');
 
-        if ($mouvement->type === 'cancel') {
-            return back()->with('error', 'Ce mouvement est déjà une annulation.');
-        }
-
-        if ($mouvement->reference_type === 'invoice') {
-            return back()->with('error', 'Impossible d\'annuler un mouvement lié à une facture. Annulez la facture concernée.');
-        }
-
         $validated = $request->validate([
             'cancel_reason' => 'required|string|min:10',
         ]);
 
-        DB::transaction(function () use ($mouvement, $validated) {
-            // Counter-entry
-            StockMovement::create([
-                'product_id' => $mouvement->product_id,
-                'type' => 'cancel',
-                'quantity' => $mouvement->quantity,
-                'reference_type' => $mouvement->reference_type,
-                'reference_id' => $mouvement->reference_id,
-                'note' => 'Annulation: ' . $validated['cancel_reason'],
-                'created_by' => Auth::id(),
-            ]);
+        try {
+            $this->stockService->cancelMovement(
+                $mouvement,
+                $validated['cancel_reason'],
+                Auth::user()
+            );
 
-            // Reverse the stock
-            if ($mouvement->type === 'entry') {
-                Product::where('id', $mouvement->product_id)
-                    ->decrement('current_stock', $mouvement->quantity);
-            } else {
-                Product::where('id', $mouvement->product_id)
-                    ->increment('current_stock', $mouvement->quantity);
-            }
-        });
-
-        return back()->with('success', 'Mouvement annulé avec succès.');
+            return back()->with('success', 'Mouvement annulé avec succès.');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 }
