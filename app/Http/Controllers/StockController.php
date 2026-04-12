@@ -53,7 +53,9 @@ class StockController extends Controller
                 $product,
                 $validated['quantity'],
                 $validated['note'] ?? '',
-                Auth::user()
+                Auth::user(),
+                $validated['input_unit'] ?? null,
+                $validated['quantity']
             );
 
             return back()->with('success', 'Entrée de stock enregistrée.');
@@ -72,7 +74,11 @@ class StockController extends Controller
                 $product,
                 $validated['quantity'],
                 $validated['note'],
-                Auth::user()
+                Auth::user(),
+                null,
+                null,
+                $validated['input_unit'] ?? null,
+                $validated['quantity']
             );
 
             return back()->with('success', 'Sortie de stock enregistrée.');

@@ -16,6 +16,7 @@ class StockEntryRequest extends FormRequest
         return [
             'product_id' => 'required|exists:products,id',
             'quantity' => 'required|integer|min:1',
+            'input_unit' => 'nullable|string|in:carton,boite,paquet,piece',
             'note' => 'nullable|string|max:500',
         ];
     }
