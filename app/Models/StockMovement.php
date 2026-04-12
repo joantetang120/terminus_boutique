@@ -16,6 +16,8 @@ class StockMovement extends Model
         'product_id',
         'type',
         'quantity',
+        'input_quantity',
+        'input_unit',
         'reference_type',
         'reference_id',
         'note',
@@ -30,6 +32,7 @@ class StockMovement extends Model
         return [
             'type' => 'string',
             'quantity' => 'integer',
+            'input_quantity' => 'integer',
             'cancelled_at' => 'datetime',
         ];
     }

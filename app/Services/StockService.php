@@ -11,29 +11,47 @@ class StockService
 {
     /**
      * Record a stock entry (incoming)
+     * @param string|null $inputUnit The unit entered by user (null = base unit)
+     * @param int|null $inputQuantity The quantity entered by user (null = use $quantity)
      */
-    public function recordEntry(Product $product, int $quantity, string $note, User $by): StockMovement
-    {
-        return DB::transaction(function () use ($product, $quantity, $note, $by) {
+    public function recordEntry(
+        Product $product, 
+        int $quantity, 
+        string $note, 
+        User $by,
+        ?string $inputUnit = null,
+        ?int $inputQuantity = null
+    ): StockMovement {
+        return DB::transaction(function () use ($product, $quantity, $note, $by, $inputUnit, $inputQuantity) {
+            // Convert to base unit if input unit is different
+            $baseQuantity = $quantity;
+            if ($inputUnit && $inputUnit !== $product->unit) {
+                $baseQuantity = $product->convertToBaseUnit($quantity, $inputUnit);
+            }
+
             $movement = StockMovement::create([
                 'product_id' => $product->id,
                 'type' => 'entry',
-                'quantity' => $quantity,
+                'quantity' => $baseQuantity,
+                'input_quantity' => $inputQuantity ?? $quantity,
+                'input_unit' => $inputUnit ?? $product->unit,
                 'note' => $note,
                 'created_by' => $by->id,
             ]);
 
-            $product->increment('current_stock', $quantity);
+            $product->increment('current_stock', $baseQuantity);
 
             activity('stock')
                 ->performedOn($product)
                 ->withProperties([
                     'product_name' => $product->name,
-                    'quantity' => $quantity,
-                    'stock_after' => $product->current_stock + $quantity,
+                    'quantity' => $baseQuantity,
+                    'input_quantity' => $inputQuantity ?? $quantity,
+                    'input_unit' => $inputUnit ?? $product->unit,
+                    'stock_after' => $product->current_stock + $baseQuantity,
                     'movement_id' => $movement->id,
                 ])
-                ->log('Entrée stock: +' . $quantity . ' ' . $product->name);
+                ->log('Entrée stock: +' . ($inputQuantity ?? $quantity) . ' ' . ($inputUnit ?? $product->unit) . ' = ' . $baseQuantity . ' ' . $product->unit . ' de ' . $product->name);
 
             return $movement;
         });
@@ -41,6 +59,8 @@ class StockService
 
     /**
      * Record a stock exit (outgoing)
+     * @param string|null $inputUnit The unit entered by user (null = base unit)
+     * @param int|null $inputQuantity The quantity entered by user (null = use $quantity)
      */
     public function recordExit(
         Product $product,
@@ -48,38 +68,51 @@ class StockService
         string $note,
         User $by,
         ?string $refType = null,
-        ?int $refId = null
+        ?int $refId = null,
+        ?string $inputUnit = null,
+        ?int $inputQuantity = null
     ): StockMovement {
-        return DB::transaction(function () use ($product, $quantity, $note, $by, $refType, $refId) {
-            if ($product->current_stock < $quantity) {
-                throw new \Exception('Stock insuffisant pour ce produit.');
+        return DB::transaction(function () use ($product, $quantity, $note, $by, $refType, $refId, $inputUnit, $inputQuantity) {
+            // Convert to base unit if input unit is different
+            $baseQuantity = $quantity;
+            if ($inputUnit && $inputUnit !== $product->unit) {
+                $baseQuantity = $product->convertToBaseUnit($quantity, $inputUnit);
+            }
+
+            if ($product->current_stock < $baseQuantity) {
+                $availableInInputUnit = $inputUnit ? $product->convertFromBaseUnit($product->current_stock, $inputUnit) : $product->current_stock;
+                throw new \Exception('Stock insuffisant. Disponible: ' . $availableInInputUnit . ' ' . ($inputUnit ?? $product->unit));
             }
 
             $movement = StockMovement::create([
                 'product_id' => $product->id,
                 'type' => 'exit',
-                'quantity' => $quantity,
+                'quantity' => $baseQuantity,
+                'input_quantity' => $inputQuantity ?? $quantity,
+                'input_unit' => $inputUnit ?? $product->unit,
                 'reference_type' => $refType,
                 'reference_id' => $refId,
                 'note' => $note,
                 'created_by' => $by->id,
             ]);
 
-            $product->decrement('current_stock', $quantity);
+            $product->decrement('current_stock', $baseQuantity);
 
-            $stockAfter = $product->current_stock - $quantity;
+            $stockAfter = $product->current_stock - $baseQuantity;
 
             activity('stock')
                 ->performedOn($product)
                 ->withProperties([
                     'product_name' => $product->name,
-                    'quantity' => $quantity,
+                    'quantity' => $baseQuantity,
+                    'input_quantity' => $inputQuantity ?? $quantity,
+                    'input_unit' => $inputUnit ?? $product->unit,
                     'stock_after' => $stockAfter,
                     'movement_id' => $movement->id,
                     'reference_type' => $refType,
                     'reference_id' => $refId,
                 ])
-                ->log('Sortie stock: -' . $quantity . ' ' . $product->name);
+                ->log('Sortie stock: -' . ($inputQuantity ?? $quantity) . ' ' . ($inputUnit ?? $product->unit) . ' = ' . $baseQuantity . ' ' . $product->unit . ' de ' . $product->name);
 
             return $movement;
         });

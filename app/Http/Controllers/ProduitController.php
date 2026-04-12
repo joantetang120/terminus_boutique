@@ -72,30 +72,64 @@ class ProduitController extends Controller
 
     public function store(StoreProductRequest $request)
     {
-
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
+
+        // Handle stock initial conversion if different unit selected
+        $inputQuantity = $validated['current_stock'];
+        $inputUnit = $validated['initial_stock_unit'] ?? null;
+        $baseQuantity = $inputQuantity;
+        $baseUnit = $validated['unit'];
+
+        if ($inputUnit && $inputUnit !== $baseUnit) {
+            // Determine conversion rate based on which unit matches
+            $conversionRate = null;
+            if ($inputUnit === ($validated['purchase_unit'] ?? null)) {
+                $conversionRate = $validated['purchase_conversion_rate'];
+            } elseif ($inputUnit === ($validated['sale_unit'] ?? null)) {
+                $conversionRate = $validated['sale_conversion_rate'];
+            } elseif ($validated['initial_stock_conversion_rate'] ?? null) {
+                $conversionRate = $validated['initial_stock_conversion_rate'];
+            }
+
+            if ($conversionRate) {
+                $baseQuantity = $inputQuantity * $conversionRate;
+            }
+        }
+
+        // Update current_stock to converted quantity
+        $validated['current_stock'] = $baseQuantity;
 
         $product = Product::create($validated);
 
         // Create initial stock movement if stock > 0 (without incrementing since product already has the stock)
-        if ($validated['current_stock'] > 0) {
+        if ($baseQuantity > 0) {
             \App\Models\StockMovement::create([
                 'product_id' => $product->id,
                 'type' => 'entry',
-                'quantity' => $validated['current_stock'],
+                'quantity' => $baseQuantity,
+                'input_quantity' => $inputQuantity,
+                'input_unit' => $inputUnit ?? $baseUnit,
                 'note' => 'Stock initial',
                 'created_by' => Auth::id(),
             ]);
+
+            $logMessage = 'Stock initial: ' . $inputQuantity . ' ' . ($inputUnit ?? $baseUnit);
+            if ($inputUnit && $inputUnit !== $baseUnit) {
+                $logMessage .= ' = ' . $baseQuantity . ' ' . $baseUnit;
+            }
+            $logMessage .= ' de ' . $product->name;
 
             activity('stock')
                 ->performedOn($product)
                 ->withProperties([
                     'product_name' => $product->name,
-                    'initial_stock' => $validated['current_stock'],
+                    'initial_stock' => $baseQuantity,
+                    'input_quantity' => $inputQuantity,
+                    'input_unit' => $inputUnit ?? $baseUnit,
                     'unit' => $product->unit,
                 ])
-                ->log('Stock initial: ' . $validated['current_stock'] . ' ' . $product->unit . ' de ' . $product->name);
+                ->log($logMessage);
         }
 
         activity('product')

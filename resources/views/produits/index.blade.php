@@ -37,10 +37,29 @@
             <tbody>
                 @forelse($products as $product)
                 <tr>
-                    <td><strong>{{ $product->name }}</strong></td>
+                    <td>
+                        <strong>{{ $product->name }}</strong>
+                        @if($product->hasConversion())
+                            <br><small style="color:#64748B;font-size:0.7rem;">
+                                @if($product->purchase_unit)
+                                    achat: {{ $product->purchase_unit }} (1={{ $product->purchase_conversion_rate }})
+                                @endif
+                                @if($product->sale_unit)
+                                    {{ $product->purchase_unit ? ' | ' : '' }}vente: {{ $product->sale_unit }} (1={{ $product->sale_conversion_rate }})
+                                @endif
+                            </small>
+                        @endif
+                    </td>
                     <td>{{ $product->unit }}</td>
-                    <td>{{ number_format($product->current_stock, 2, ',', ' ') }}</td>
-                    <td>{{ number_format($product->alert_threshold, 2, ',', ' ') }}</td>
+                    <td>
+                        {{ number_format($product->current_stock, 0, ',', ' ') }}
+                        @if($product->sale_unit && $product->sale_conversion_rate)
+                            <br><small style="color:#64748B;font-size:0.7rem;">
+                                ({{ floor($product->current_stock / $product->sale_conversion_rate) }} {{ $product->sale_unit }})
+                            </small>
+                        @endif
+                    </td>
+                    <td>{{ number_format($product->alert_threshold, 0, ',', ' ') }}</td>
                     <td>
                         @if($product->isLowStock())
                             <span class="badge badge-danger">Alerte</span>
