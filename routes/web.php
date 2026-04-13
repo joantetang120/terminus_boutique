@@ -32,15 +32,31 @@ Route::middleware(['auth'])->group(function () {
     Route::post('factures/{facture}/annuler', [\App\Http\Controllers\FactureController::class, 'annuler'])
         ->name('factures.annuler')->middleware('can:facture.cancel');
 
-    // Stock
-    Route::get('stock', [\App\Http\Controllers\StockController::class, 'index'])->name('stock.index');
-    Route::post('stock/entree', [\App\Http\Controllers\StockController::class, 'entree'])->name('stock.entree');
-    Route::post('stock/sortie', [\App\Http\Controllers\StockController::class, 'sortie'])->name('stock.sortie');
-    Route::post('stock/{mouvement}/annuler', [\App\Http\Controllers\StockController::class, 'annuler'])
-        ->name('stock.annuler')->middleware('can:stock.cancel');
+    // Stock - Groupe préfixé avec middleware can
+    Route::prefix('stock')->middleware('can:stock.view')->group(function () {
+        Route::get('history', [\App\Http\Controllers\StockController::class, 'index'])->name('stock.index');
+        Route::post('entry', [\App\Http\Controllers\StockController::class, 'entree'])
+            ->name('stock.entree')->middleware('can:stock.create');
+        Route::post('exit', [\App\Http\Controllers\StockController::class, 'sortie'])
+            ->name('stock.sortie')->middleware('can:stock.create');
+        Route::post('{mouvement}/cancel', [\App\Http\Controllers\StockController::class, 'annuler'])
+            ->name('stock.annuler')->middleware('can:stock.cancel');
+    });
 
-    // Produits
-    Route::resource('produits', \App\Http\Controllers\ProduitController::class)->only(['index', 'create', 'store']);
+    // Produits - CRUD complet avec permissions
+    Route::prefix('products')->middleware('can:product.view')->group(function () {
+        Route::get('/', [\App\Http\Controllers\ProduitController::class, 'index'])->name('produits.index');
+        Route::get('create', [\App\Http\Controllers\ProduitController::class, 'create'])
+            ->name('produits.create')->middleware('can:product.create');
+        Route::post('/', [\App\Http\Controllers\ProduitController::class, 'store'])
+            ->name('produits.store')->middleware('can:product.create');
+        Route::get('{produit}/edit', [\App\Http\Controllers\ProduitController::class, 'edit'])
+            ->name('produits.edit')->middleware('can:product.edit');
+        Route::put('{produit}', [\App\Http\Controllers\ProduitController::class, 'update'])
+            ->name('produits.update')->middleware('can:product.edit');
+        Route::delete('{produit}', [\App\Http\Controllers\ProduitController::class, 'destroy'])
+            ->name('produits.destroy')->middleware('can:product.edit');
+    });
 
     // Ghost
     Route::get('ghost', [\App\Http\Controllers\GhostController::class, 'index'])

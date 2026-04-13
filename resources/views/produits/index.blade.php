@@ -37,10 +37,29 @@
             <tbody>
                 @forelse($products as $product)
                 <tr>
-                    <td><strong>{{ $product->name }}</strong></td>
+                    <td>
+                        <strong>{{ $product->name }}</strong>
+                        @if($product->hasConversion())
+                            <br><small style="color:#64748B;font-size:0.7rem;">
+                                @if($product->purchase_unit)
+                                    achat: {{ $product->purchase_unit }} (1={{ $product->purchase_conversion_rate }})
+                                @endif
+                                @if($product->sale_unit)
+                                    {{ $product->purchase_unit ? ' | ' : '' }}vente: {{ $product->sale_unit }} (1={{ $product->sale_conversion_rate }})
+                                @endif
+                            </small>
+                        @endif
+                    </td>
                     <td>{{ $product->unit }}</td>
-                    <td>{{ number_format($product->current_stock, 2, ',', ' ') }}</td>
-                    <td>{{ number_format($product->alert_threshold, 2, ',', ' ') }}</td>
+                    <td>
+                        {{ number_format($product->current_stock, 0, ',', ' ') }}
+                        @if($product->sale_unit && $product->sale_conversion_rate)
+                            <br><small style="color:#64748B;font-size:0.7rem;">
+                                ({{ floor($product->current_stock / $product->sale_conversion_rate) }} {{ $product->sale_unit }})
+                            </small>
+                        @endif
+                    </td>
+                    <td>{{ number_format($product->alert_threshold, 0, ',', ' ') }}</td>
                     <td>
                         @if($product->isLowStock())
                             <span class="badge badge-danger">Alerte</span>
@@ -48,8 +67,16 @@
                             <span class="badge badge-success">OK</span>
                         @endif
                     </td>
-                    <td>
-                        <a href="{{ route('stock.index', ['product_id' => $product->id]) }}" class="btn btn-secondary btn-sm">Voir mouvements</a>
+                    <td style="display:flex;gap:8px;">
+                        <a href="{{ route('stock.index', ['product_id' => $product->id]) }}" class="btn btn-secondary btn-sm">Mouvements</a>
+                        @can('product.edit')
+                        <a href="{{ route('produits.edit', $product) }}" class="btn btn-accent btn-sm">Modifier</a>
+                        <button class="btn btn-danger btn-sm"
+                                x-data
+                                @click="$dispatch('open-delete-product', { id: {{ $product->id }}, name: '{{ $product->name }}' })">
+                            Supprimer
+                        </button>
+                        @endcan
                     </td>
                 </tr>
                 @empty
@@ -62,6 +89,37 @@
 
         <div style="padding:16px;">
             {{ $products->links() }}
+        </div>
+    </div>
+
+    {{-- Delete Product Modal --}}
+    <div x-data="{ open: false, id: null, name: '' }"
+         @open-delete-product.window="open = true; id = $event.detail.id; name = $event.detail.name"
+         x-show="open"
+         x-cloak
+         class="modal-backdrop"
+         style="display:none;">
+        <div class="modal" @click.away="open = false">
+            <div class="modal-header">
+                <h3>⚠ Confirmer la suppression</h3>
+                <button @click="open = false" style="background:none;border:none;cursor:pointer;font-size:1.25rem;">&times;</button>
+            </div>
+            <form :action="'/products/' + id" method="POST">
+                @csrf
+                @method('DELETE')
+                <div class="modal-body">
+                    <p style="margin-bottom:16px;color:#64748B;">
+                        Êtes-vous sûr de vouloir supprimer <strong x-text="name"></strong> ?
+                    </p>
+                    <p style="color:#C0392B;font-size:0.875rem;">
+                        Cette action est irréversible.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @click="open = false">Annuler</button>
+                    <button type="submit" class="btn btn-danger">Confirmer la suppression</button>
+                </div>
+            </form>
         </div>
     </div>
 </x-app-layout>
