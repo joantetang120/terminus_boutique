@@ -12,15 +12,18 @@ class ProfileUpdateVerification extends Mailable
 {
     use Queueable, SerializesModels;
 
-    // On déclare la variable publique pour qu'elle soit accessible dans la vue Blade
     public $code;
+    public $changes;
+    public $emailChanged;
 
     /**
-     * On passe le code généré au constructeur
+     * Create a new message instance.
      */
-    public function __construct($code)
+    public function __construct($code, $changes = [], $emailChanged = false)
     {
         $this->code = $code;
+        $this->changes = $changes;
+        $this->emailChanged = $emailChanged;
     }
 
     /**
@@ -28,20 +31,26 @@ class ProfileUpdateVerification extends Mailable
      */
     public function envelope(): Envelope
     {
+        $subject = $this->emailChanged
+            ? 'Code de vérification - Changement d\'adresse email'
+            : 'Code de vérification - Modification du profil';
+
         return new Envelope(
-            subject: 'Code de vérification - Modification du profil',
+            subject: $subject,
         );
     }
 
     /**
-     * Définition de la vue et passage du code
+     * Définition de la vue et passage des données
      */
     public function content(): Content
     {
         return new Content(
-            view: 'emails.profile_code', // Le fichier qu'on va créer dans resources/views/emails/
+            view: 'emails.profile_code',
             with: [
                 'code' => $this->code,
+                'changes' => $this->changes,
+                'emailChanged' => $this->emailChanged,
             ],
         );
     }
