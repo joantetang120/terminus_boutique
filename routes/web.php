@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ResetPasswordController;
+use App\Http\Controllers\ProfileController;
 
 // Auth
 Route::get('/', [AuthController::class, 'showLogin'])->name('login');
@@ -79,4 +80,17 @@ Route::middleware(['auth'])->group(function () {
     // Audit
     Route::get('audit', [\App\Http\Controllers\AuditController::class, 'index'])
         ->name('audit.index')->middleware('can:audit.view');
+        
+    // Profile
+    Route::get('profile', [\App\Http\Controllers\ProfileController::class, 'show'])
+        ->name('profile.show');
+
+    Route::post('/profile/request-update', [\App\Http\Controllers\ProfileController::class, 'requestUpdate'])
+    ->name('profile.request_update');
+
+    Route::get('/profile/verify', [ProfileController::class, 'verifyForm'])->name('profile.verify_form');
+
+Route::post('/profile/confirm-update', [ProfileController::class, 'confirmUpdate'])->name('profile.confirm_update');
+    
 });
+
