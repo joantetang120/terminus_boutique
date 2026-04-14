@@ -102,6 +102,28 @@ class ProduitController extends Controller
 
         $product = Product::create($validated);
 
+        // Save multiple sale conversions
+        if (!empty($validated['sale_conversions'])) {
+            foreach ($validated['sale_conversions'] as $conversion) {
+                $product->unitConversions()->create([
+                    'unit_type' => 'sale',
+                    'unit' => $conversion['unit'],
+                    'conversion_rate' => $conversion['conversion_rate'],
+                ]);
+            }
+        }
+
+        // Save multiple purchase conversions
+        if (!empty($validated['purchase_conversions'])) {
+            foreach ($validated['purchase_conversions'] as $conversion) {
+                $product->unitConversions()->create([
+                    'unit_type' => 'purchase',
+                    'unit' => $conversion['unit'],
+                    'conversion_rate' => $conversion['conversion_rate'],
+                ]);
+            }
+        }
+
         // Create initial stock movement if stock > 0 (without incrementing since product already has the stock)
         if ($baseQuantity > 0) {
             \App\Models\StockMovement::create([
@@ -146,16 +168,39 @@ class ProduitController extends Controller
 
     public function edit(Product $produit)
     {
-
+        $produit->load('unitConversions');
         return view('produits.edit', compact('produit'));
     }
 
     public function update(UpdateProductRequest $request, Product $produit)
     {
-
         $validated = $request->validated();
 
         $produit->update($validated);
+
+        // Update multiple sale conversions - delete existing and recreate
+        if (isset($validated['sale_conversions'])) {
+            $produit->saleConversions()->delete();
+            foreach ($validated['sale_conversions'] as $conversion) {
+                $produit->unitConversions()->create([
+                    'unit_type' => 'sale',
+                    'unit' => $conversion['unit'],
+                    'conversion_rate' => $conversion['conversion_rate'],
+                ]);
+            }
+        }
+
+        // Update multiple purchase conversions - delete existing and recreate
+        if (isset($validated['purchase_conversions'])) {
+            $produit->purchaseConversions()->delete();
+            foreach ($validated['purchase_conversions'] as $conversion) {
+                $produit->unitConversions()->create([
+                    'unit_type' => 'purchase',
+                    'unit' => $conversion['unit'],
+                    'conversion_rate' => $conversion['conversion_rate'],
+                ]);
+            }
+        }
 
         activity('product')
             ->performedOn($produit)

@@ -18,10 +18,10 @@ class UpdateProductRequest extends FormRequest
         return [
             'name' => 'required|string|max:255|unique:products,name,' . $productId,
             'description' => 'nullable|string',
-            'unit' => 'required|in:carton,boite,paquet,piece',
-            'purchase_unit' => 'nullable|in:carton,boite,paquet,piece|different:unit',
+            'unit' => 'required|in:carton,boite,paquet,piece,sceau,sacs,palettes',
+            'purchase_unit' => 'nullable|in:carton,boite,paquet,piece,sceau,sacs,palettes|different:unit',
             'purchase_conversion_rate' => 'nullable|integer|min:1|required_with:purchase_unit',
-            'sale_unit' => 'nullable|in:carton,boite,paquet,piece|different:unit',
+            'sale_unit' => 'nullable|in:carton,boite,paquet,piece,sceau,sacs,palettes|different:unit',
             'sale_conversion_rate' => 'nullable|integer|min:1|required_with:sale_unit',
             'current_stock' => 'required|integer|min:0',
             'alert_threshold' => 'required|integer|min:0',

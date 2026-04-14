@@ -50,6 +50,21 @@ class Product extends Model
         return $this->hasMany(StockMovement::class);
     }
 
+    public function unitConversions()
+    {
+        return $this->hasMany(ProductUnitConversion::class);
+    }
+
+    public function purchaseConversions()
+    {
+        return $this->hasMany(ProductUnitConversion::class)->where('unit_type', 'purchase');
+    }
+
+    public function saleConversions()
+    {
+        return $this->hasMany(ProductUnitConversion::class)->where('unit_type', 'sale');
+    }
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -100,12 +115,22 @@ class Product extends Model
             return $quantity;
         }
 
+        // Check legacy columns (for backward compatibility)
         if ($fromUnit === $this->purchase_unit && $this->purchase_conversion_rate) {
             return $quantity * $this->purchase_conversion_rate;
         }
 
         if ($fromUnit === $this->sale_unit && $this->sale_conversion_rate) {
             return $quantity * $this->sale_conversion_rate;
+        }
+
+        // Check new unit_conversions table
+        $conversion = $this->unitConversions()
+            ->where('unit', $fromUnit)
+            ->first();
+
+        if ($conversion) {
+            return $quantity * $conversion->conversion_rate;
         }
 
         throw new \Exception("Unité '{$fromUnit}' non reconnue pour ce produit");
@@ -120,12 +145,22 @@ class Product extends Model
             return $quantity;
         }
 
+        // Check legacy columns (for backward compatibility)
         if ($toUnit === $this->purchase_unit && $this->purchase_conversion_rate) {
             return (int) floor($quantity / $this->purchase_conversion_rate);
         }
 
         if ($toUnit === $this->sale_unit && $this->sale_conversion_rate) {
             return (int) floor($quantity / $this->sale_conversion_rate);
+        }
+
+        // Check new unit_conversions table
+        $conversion = $this->unitConversions()
+            ->where('unit', $toUnit)
+            ->first();
+
+        if ($conversion) {
+            return (int) floor($quantity / $conversion->conversion_rate);
         }
 
         throw new \Exception("Unité '{$toUnit}' non reconnue pour ce produit");
@@ -138,6 +173,7 @@ class Product extends Model
     {
         $units = [$this->unit => $this->unit];
 
+        // Legacy columns (backward compatibility)
         if ($this->purchase_unit) {
             $units[$this->purchase_unit] = $this->purchase_unit . ' (achat: 1 = ' . $this->purchase_conversion_rate . ' ' . $this->unit . ')';
         }
@@ -146,6 +182,24 @@ class Product extends Model
             $units[$this->sale_unit] = $this->sale_unit . ' (vente: 1 = ' . $this->sale_conversion_rate . ' ' . $this->unit . ')';
         }
 
+        // New unit conversions
+        foreach ($this->unitConversions as $conversion) {
+            if (!isset($units[$conversion->unit])) {
+                $label = $conversion->unit . ' (' . $conversion->unit_type . ': 1 = ' . $conversion->conversion_rate . ' ' . $this->unit . ')';
+                $units[$conversion->unit] = $label;
+            }
+        }
+
         return $units;
+    }
+
+    /**
+     * Check if product has any unit conversions configured
+     */
+    public function hasConversions(): bool
+    {
+        return $this->purchase_unit !== null
+            || $this->sale_unit !== null
+            || $this->unitConversions()->exists();
     }
 }

@@ -169,6 +169,9 @@
                                     <option value="paquet" {{ old('unit', $produit->unit) === 'paquet' ? 'selected' : '' }}>Paquet</option>
                                     <option value="boite" {{ old('unit', $produit->unit) === 'boite' ? 'selected' : '' }}>Boîte</option>
                                     <option value="carton" {{ old('unit', $produit->unit) === 'carton' ? 'selected' : '' }}>Carton</option>
+                                    <option value="sceau" {{ old('unit', $produit->unit) === 'sceau' ? 'selected' : '' }}>Sceau</option>
+                                    <option value="sacs" {{ old('unit', $produit->unit) === 'sacs' ? 'selected' : '' }}>Sacs</option>
+                                    <option value="palettes" {{ old('unit', $produit->unit) === 'palettes' ? 'selected' : '' }}>Palettes</option>
                                 </select>
                             </div>
                             <p class="field-note warning">
@@ -227,6 +230,9 @@
                                             <option value="paquet" {{ old('purchase_unit', $produit->purchase_unit) === 'paquet' ? 'selected' : '' }}>Paquet</option>
                                             <option value="boite" {{ old('purchase_unit', $produit->purchase_unit) === 'boite' ? 'selected' : '' }}>Boîte</option>
                                             <option value="carton" {{ old('purchase_unit', $produit->purchase_unit) === 'carton' ? 'selected' : '' }}>Carton</option>
+                                            <option value="sceau" {{ old('purchase_unit', $produit->purchase_unit) === 'sceau' ? 'selected' : '' }}>Sceau</option>
+                                            <option value="sacs" {{ old('purchase_unit', $produit->purchase_unit) === 'sacs' ? 'selected' : '' }}>Sacs</option>
+                                            <option value="palettes" {{ old('purchase_unit', $produit->purchase_unit) === 'palettes' ? 'selected' : '' }}>Palettes</option>
                                         </select>
                                     </div>
                                 </div>
@@ -247,7 +253,7 @@
                             </div>
                         </div>
 
-                        {{-- Sale Conversion --}}
+                        {{-- Sale Conversions (Multiple) --}}
                         <div class="conversion-card">
                             <div class="conversion-type-badge sale">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -256,34 +262,140 @@
                                 </svg>
                                 <span>Vente</span>
                             </div>
-                            <div class="conversion-fields">
-                                <div class="field-group">
-                                    <label class="field-label">Unité de vente</label>
-                                    <div class="select-wrapper">
-                                        <select id="sale_unit" name="sale_unit" class="styled-select">
-                                            <option value="">Identique à la base</option>
-                                            <option value="piece" {{ old('sale_unit', $produit->sale_unit) === 'piece' ? 'selected' : '' }}>Pièce</option>
-                                            <option value="paquet" {{ old('sale_unit', $produit->sale_unit) === 'paquet' ? 'selected' : '' }}>Paquet</option>
-                                            <option value="boite" {{ old('sale_unit', $produit->sale_unit) === 'boite' ? 'selected' : '' }}>Boîte</option>
-                                            <option value="carton" {{ old('sale_unit', $produit->sale_unit) === 'carton' ? 'selected' : '' }}>Carton</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="field-group">
-                                    <label class="field-label">Taux de conversion</label>
-                                    <div class="rate-input-group">
-                                        <span class="rate-prefix">1 unité =</span>
-                                        <input type="number" 
-                                               id="sale_conversion_rate" 
-                                               name="sale_conversion_rate"
-                                               value="{{ old('sale_conversion_rate', $produit->sale_conversion_rate) }}" 
-                                               min="1"
-                                               class="styled-input rate-input" 
-                                               placeholder="12">
-                                        <span class="rate-suffix" id="sale-rate-suffix">pièces</span>
-                                    </div>
-                                </div>
+                            <div id="sale-conversions-container">
+                                @if(old('sale_conversions'))
+                                    @foreach(old('sale_conversions') as $index => $conversion)
+                                        <div class="conversion-row" data-index="{{ $index }}">
+                                            <div class="conversion-fields">
+                                                <div class="field-group">
+                                                    <label class="field-label">Unité de vente</label>
+                                                    <div class="select-wrapper">
+                                                        <select name="sale_conversions[{{ $index }}][unit]" class="styled-select sale-unit-select" onchange="updateSaleSuffixes()">
+                                                            <option value="">Identique à la base</option>
+                                                            <option value="piece" {{ $conversion['unit'] === 'piece' ? 'selected' : '' }}>Pièce</option>
+                                                            <option value="paquet" {{ $conversion['unit'] === 'paquet' ? 'selected' : '' }}>Paquet</option>
+                                                            <option value="boite" {{ $conversion['unit'] === 'boite' ? 'selected' : '' }}>Boîte</option>
+                                                            <option value="carton" {{ $conversion['unit'] === 'carton' ? 'selected' : '' }}>Carton</option>
+                                                            <option value="sceau" {{ $conversion['unit'] === 'sceau' ? 'selected' : '' }}>Sceau</option>
+                                                            <option value="sacs" {{ $conversion['unit'] === 'sacs' ? 'selected' : '' }}>Sacs</option>
+                                                            <option value="palettes" {{ $conversion['unit'] === 'palettes' ? 'selected' : '' }}>Palettes</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="field-group">
+                                                    <label class="field-label">Taux de conversion</label>
+                                                    <div class="rate-input-group">
+                                                        <span class="rate-prefix">1 <span class="sale-unit-label">{{ $conversion['unit'] ?: 'unité' }}</span> =</span>
+                                                        <input type="number" 
+                                                               name="sale_conversions[{{ $index }}][conversion_rate]"
+                                                               value="{{ $conversion['conversion_rate'] }}" 
+                                                               min="1"
+                                                               class="styled-input rate-input" 
+                                                               placeholder="12">
+                                                        <span class="rate-suffix base-unit-label">{{ $produit->unit }}</span>
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="btn-remove-conversion" onclick="removeConversion(this)" title="Supprimer">
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <line x1="18" y1="6" x2="6" y2="18"/>
+                                                        <line x1="6" y1="6" x2="18" y2="18"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                @elseif($produit->saleConversions->count() > 0)
+                                    @foreach($produit->saleConversions as $index => $conversion)
+                                        <div class="conversion-row" data-index="{{ $index }}">
+                                            <div class="conversion-fields">
+                                                <div class="field-group">
+                                                    <label class="field-label">Unité de vente</label>
+                                                    <div class="select-wrapper">
+                                                        <select name="sale_conversions[{{ $index }}][unit]" class="styled-select sale-unit-select" onchange="updateSaleSuffixes()">
+                                                            <option value="">Identique à la base</option>
+                                                            <option value="piece" {{ $conversion->unit === 'piece' ? 'selected' : '' }}>Pièce</option>
+                                                            <option value="paquet" {{ $conversion->unit === 'paquet' ? 'selected' : '' }}>Paquet</option>
+                                                            <option value="boite" {{ $conversion->unit === 'boite' ? 'selected' : '' }}>Boîte</option>
+                                                            <option value="carton" {{ $conversion->unit === 'carton' ? 'selected' : '' }}>Carton</option>
+                                                            <option value="sceau" {{ $conversion->unit === 'sceau' ? 'selected' : '' }}>Sceau</option>
+                                                            <option value="sacs" {{ $conversion->unit === 'sacs' ? 'selected' : '' }}>Sacs</option>
+                                                            <option value="palettes" {{ $conversion->unit === 'palettes' ? 'selected' : '' }}>Palettes</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="field-group">
+                                                    <label class="field-label">Taux de conversion</label>
+                                                    <div class="rate-input-group">
+                                                        <span class="rate-prefix">1 <span class="sale-unit-label">{{ $conversion->unit }}</span> =</span>
+                                                        <input type="number" 
+                                                               name="sale_conversions[{{ $index }}][conversion_rate]"
+                                                               value="{{ $conversion->conversion_rate }}" 
+                                                               min="1"
+                                                               class="styled-input rate-input" 
+                                                               placeholder="12">
+                                                        <span class="rate-suffix base-unit-label">{{ $produit->unit }}</span>
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="btn-remove-conversion" onclick="removeConversion(this)" title="Supprimer">
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <line x1="18" y1="6" x2="6" y2="18"/>
+                                                        <line x1="6" y1="6" x2="18" y2="18"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                @else
+                                    {{-- Legacy: Show single conversion if exists --}}
+                                    @if($produit->sale_unit)
+                                        <div class="conversion-row" data-index="0">
+                                            <div class="conversion-fields">
+                                                <div class="field-group">
+                                                    <label class="field-label">Unité de vente</label>
+                                                    <div class="select-wrapper">
+                                                        <select name="sale_conversions[0][unit]" class="styled-select sale-unit-select" onchange="updateSaleSuffixes()">
+                                                            <option value="">Identique à la base</option>
+                                                            <option value="piece" {{ $produit->sale_unit === 'piece' ? 'selected' : '' }}>Pièce</option>
+                                                            <option value="paquet" {{ $produit->sale_unit === 'paquet' ? 'selected' : '' }}>Paquet</option>
+                                                            <option value="boite" {{ $produit->sale_unit === 'boite' ? 'selected' : '' }}>Boîte</option>
+                                                            <option value="carton" {{ $produit->sale_unit === 'carton' ? 'selected' : '' }}>Carton</option>
+                                                            <option value="sceau" {{ $produit->sale_unit === 'sceau' ? 'selected' : '' }}>Sceau</option>
+                                                            <option value="sacs" {{ $produit->sale_unit === 'sacs' ? 'selected' : '' }}>Sacs</option>
+                                                            <option value="palettes" {{ $produit->sale_unit === 'palettes' ? 'selected' : '' }}>Palettes</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="field-group">
+                                                    <label class="field-label">Taux de conversion</label>
+                                                    <div class="rate-input-group">
+                                                        <span class="rate-prefix">1 <span class="sale-unit-label">{{ $produit->sale_unit }}</span> =</span>
+                                                        <input type="number" 
+                                                               name="sale_conversions[0][conversion_rate]"
+                                                               value="{{ $produit->sale_conversion_rate }}" 
+                                                               min="1"
+                                                               class="styled-input rate-input" 
+                                                               placeholder="12">
+                                                        <span class="rate-suffix base-unit-label">{{ $produit->unit }}</span>
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="btn-remove-conversion" onclick="removeConversion(this)" title="Supprimer">
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <line x1="18" y1="6" x2="6" y2="18"/>
+                                                        <line x1="6" y1="6" x2="18" y2="18"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @endif
+                                @endif
                             </div>
+                            <button type="button" class="btn-add-conversion" onclick="addSaleConversion()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                                Ajouter une unité de vente
+                            </button>
                         </div>
                     </div>
 
@@ -1293,6 +1405,83 @@ document.addEventListener('keydown', function(e) {
         cancelModal.classList.remove('active');
     }
 });
+
+// Dynamic Sale Conversions
+let saleConversionIndex = {{ max(old('sale_conversions') ? count(old('sale_conversions')) : 0, $produit->saleConversions->count() ?: ($produit->sale_unit ? 1 : 0)) }};
+
+function addSaleConversion() {
+    const container = document.getElementById('sale-conversions-container');
+    const baseUnit = document.getElementById('unit').value || '{{ $produit->unit }}';
+    
+    const row = document.createElement('div');
+    row.className = 'conversion-row';
+    row.dataset.index = saleConversionIndex;
+    
+    row.innerHTML = `
+        <div class="conversion-fields">
+            <div class="field-group">
+                <label class="field-label">Unité de vente</label>
+                <div class="select-wrapper">
+                    <select name="sale_conversions[${saleConversionIndex}][unit]" class="styled-select sale-unit-select" onchange="updateSaleSuffixes()">
+                        <option value="">Identique à la base</option>
+                        <option value="piece">Pièce</option>
+                        <option value="paquet">Paquet</option>
+                        <option value="boite">Boîte</option>
+                        <option value="carton">Carton</option>
+                        <option value="sceau">Sceau</option>
+                        <option value="sacs">Sacs</option>
+                        <option value="palettes">Palettes</option>
+                    </select>
+                </div>
+            </div>
+            <div class="field-group">
+                <label class="field-label">Taux de conversion</label>
+                <div class="rate-input-group">
+                    <span class="rate-prefix">1 <span class="sale-unit-label">unité</span> =</span>
+                    <input type="number" 
+                           name="sale_conversions[${saleConversionIndex}][conversion_rate]"
+                           min="1"
+                           class="styled-input rate-input" 
+                           placeholder="12">
+                    <span class="rate-suffix base-unit-label">${baseUnit}</span>
+                </div>
+            </div>
+            <button type="button" class="btn-remove-conversion" onclick="removeConversion(this)" title="Supprimer">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(row);
+    saleConversionIndex++;
+}
+
+function removeConversion(button) {
+    const row = button.closest('.conversion-row');
+    row.remove();
+    updateSaleSuffixes();
+}
+
+function updateSaleSuffixes() {
+    const baseUnit = document.getElementById('unit').value || '{{ $produit->unit }}';
+    document.querySelectorAll('.base-unit-label').forEach(el => {
+        el.textContent = baseUnit;
+    });
+    
+    document.querySelectorAll('.sale-unit-select').forEach(select => {
+        const row = select.closest('.conversion-row');
+        const unitLabel = row.querySelector('.sale-unit-label');
+        if (unitLabel) {
+            unitLabel.textContent = select.value || 'unité';
+        }
+    });
+}
+
+// Update unit labels when base unit changes
+document.getElementById('unit').addEventListener('change', updateSaleSuffixes);
 </script>
 
 <style>
@@ -1427,5 +1616,71 @@ document.addEventListener('keydown', function(e) {
 }
 
 [x-cloak] { display: none !important; }
+
+/* Dynamic Conversion Styles */
+.conversion-row {
+    margin-bottom: 12px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.conversion-row .conversion-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 12px;
+    align-items: end;
+}
+
+.btn-add-conversion {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 12px;
+}
+
+.btn-add-conversion:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-remove-conversion {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #fef2f2;
+    color: #ef4444;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-remove-conversion:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.sale-unit-label {
+    font-weight: 500;
+    color: #059669;
+}
+
+.base-unit-label {
+    font-weight: 500;
+    color: #3b82f6;
+}
 </style>
 </x-app-layout>
