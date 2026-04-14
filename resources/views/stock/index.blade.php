@@ -206,7 +206,21 @@
                         <select class="form-select" id="exit_product" name="product_id" required onchange="updateExitUnitOptions()">
                             <option value="">Sélectionner...</option>
                             @foreach($products as $product)
-                            <option value="{{ $product->id }}" data-unit="{{ $product->unit }}" data-current="{{ $product->current_stock }}" data-sale-unit="{{ $product->sale_unit }}" data-sale-rate="{{ $product->sale_conversion_rate }}">{{ $product->name }} ({{ $product->current_stock }} {{ $product->unit }})</option>
+                            @php
+                                $saleConversions = $product->saleConversions->map(fn($c) => ['unit' => $c->unit, 'rate' => $c->conversion_rate])->toArray();
+                                // Include legacy sale unit if exists and not already in conversions
+                                if ($product->sale_unit && !collect($saleConversions)->first(fn($c) => $c['unit'] === $product->sale_unit)) {
+                                    $saleConversions[] = ['unit' => $product->sale_unit, 'rate' => $product->sale_conversion_rate];
+                                }
+                            @endphp
+                            <option value="{{ $product->id }}"
+                                    data-unit="{{ $product->unit }}"
+                                    data-current="{{ $product->current_stock }}"
+                                    data-sale-unit="{{ $product->sale_unit }}"
+                                    data-sale-rate="{{ $product->sale_conversion_rate }}"
+                                    data-conversions='@json($saleConversions)'>
+                                {{ $product->name }} ({{ $product->current_stock }} {{ $product->unit }})
+                            </option>
                             @endforeach
                         </select>
                     </div>
@@ -307,39 +321,62 @@ function updateExitUnitOptions() {
     const unitSelect = document.getElementById('exit_unit');
     const stockInfo = document.getElementById('exit_stock_info');
     const conversionInfo = document.getElementById('exit_conversion_info');
-    
+
     const selectedOption = productSelect.options[productSelect.selectedIndex];
-    
+
     if (!selectedOption.value) {
         unitSelect.innerHTML = '<option value="">--</option>';
         stockInfo.innerHTML = 'Sélectionnez un produit';
         conversionInfo.style.display = 'none';
         return;
     }
-    
+
     const baseUnit = selectedOption.dataset.unit;
-    const currentStock = selectedOption.dataset.current;
-    const saleUnit = selectedOption.dataset.saleUnit;
-    const saleRate = selectedOption.dataset.saleRate;
-    
+    const currentStock = parseInt(selectedOption.dataset.current) || 0;
+
+    // Parse all sale conversions
+    let conversions = [];
+    try {
+        conversions = JSON.parse(selectedOption.dataset.conversions || '[]');
+    } catch (e) {
+        conversions = [];
+    }
+
+    // Add legacy sale unit if exists and not in conversions
+    const legacyUnit = selectedOption.dataset.saleUnit;
+    const legacyRate = parseInt(selectedOption.dataset.saleRate) || 0;
+    if (legacyUnit && legacyRate && !conversions.find(c => c.unit === legacyUnit)) {
+        conversions.push({ unit: legacyUnit, rate: legacyRate });
+    }
+
+    // Build unit options
     let options = `<option value="${baseUnit}" selected>${baseUnit}</option>`;
-    
-    if (saleUnit && saleRate) {
-        options += `<option value="${saleUnit}">${saleUnit}</option>`;
-    }
-    
+    conversions.forEach(conv => {
+        if (conv.unit && conv.rate) {
+            options += `<option value="${conv.unit}">${conv.unit}</option>`;
+        }
+    });
     unitSelect.innerHTML = options;
-    
-    // Calculate stock in different units
+
+    // Calculate stock display with all conversions
     let stockDisplay = `Stock: ${currentStock} ${baseUnit}`;
-    if (saleUnit && saleRate) {
-        const stockInSaleUnit = Math.floor(currentStock / saleRate);
-        stockDisplay += ` (${stockInSaleUnit} ${saleUnit})`;
-    }
+    conversions.forEach(conv => {
+        if (conv.unit && conv.rate) {
+            const stockInUnit = Math.floor(currentStock / conv.rate);
+            stockDisplay += ` (${stockInUnit} ${conv.unit})`;
+        }
+    });
     stockInfo.innerHTML = stockDisplay;
-    
-    if (saleUnit && saleRate) {
-        conversionInfo.innerHTML = `Conversion: 1 ${saleUnit} = ${saleRate} ${baseUnit}`;
+
+    // Show conversion info for first conversion
+    if (conversions.length > 0 && conversions[0].unit && conversions[0].rate) {
+        let convInfo = 'Conversions:<br>';
+        conversions.forEach(conv => {
+            if (conv.unit && conv.rate) {
+                convInfo += `1 ${conv.unit} = ${conv.rate} ${baseUnit}<br>`;
+            }
+        });
+        conversionInfo.innerHTML = convInfo;
         conversionInfo.style.display = 'block';
     } else {
         conversionInfo.style.display = 'none';

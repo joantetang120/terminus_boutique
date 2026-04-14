@@ -59,7 +59,7 @@ class FactureController extends Controller
             'note' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.designation' => 'required|string',
-            'items.*.unit' => 'required|in:carton,boite,paquet,piece',
+            'items.*.unit' => 'required|in:carton,boite,paquet,piece,sceau,sacs,palettes',
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.original_price' => 'nullable|numeric|min:0',

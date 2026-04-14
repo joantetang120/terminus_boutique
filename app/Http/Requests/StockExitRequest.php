@@ -45,7 +45,7 @@ class StockExitRequest extends FormRequest
                     }
                 },
             ],
-            'input_unit' => 'nullable|string|in:carton,boite,paquet,piece',
+            'input_unit' => 'nullable|string|in:carton,boite,paquet,piece,sceau,sacs,palettes',
             'note' => 'required|string|min:5|max:500',
         ];
     }
