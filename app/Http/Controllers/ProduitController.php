@@ -52,10 +52,13 @@ class ProduitController extends Controller
 
     public function show(Product $produit)
     {
-
-        $produit->load(['creator', 'stockMovements' => function ($query) {
-            $query->with('createdBy')->latest()->take(50);
-        }]);
+        $produit->load([
+            'creator',
+            'saleConversions',
+            'stockMovements' => function ($query) {
+                $query->with('createdBy')->latest()->take(20);
+            }
+        ]);
 
         activity('product')
             ->performedOn($produit)

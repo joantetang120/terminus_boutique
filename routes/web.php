@@ -51,6 +51,8 @@ Route::middleware(['auth'])->group(function () {
             ->name('produits.create')->middleware('can:product.create');
         Route::post('/', [\App\Http\Controllers\ProduitController::class, 'store'])
             ->name('produits.store')->middleware('can:product.create');
+        Route::get('{produit}', [\App\Http\Controllers\ProduitController::class, 'show'])
+            ->name('produits.show');
         Route::get('{produit}/edit', [\App\Http\Controllers\ProduitController::class, 'edit'])
             ->name('produits.edit')->middleware('can:product.edit');
         Route::put('{produit}', [\App\Http\Controllers\ProduitController::class, 'update'])
