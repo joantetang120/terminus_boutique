@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AccountStatusMail;
+use App\Mail\WelcomeMail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Spatie\Permission\Models\Permission;
 
 class UserController extends Controller
@@ -44,6 +47,10 @@ class UserController extends Controller
             $user->syncPermissions($validated['permissions']);
         }
 
+        // Send welcome email to the new user
+        $createdByName = Auth::user()->name;
+        Mail::to($user->email)->send(new WelcomeMail($user->name, $createdByName));
+
         return redirect()->route('utilisateurs.index')->with('success', 'Utilisateur créé avec succès.');
     }
 
@@ -60,7 +67,6 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $utilisateur->id,
-            'password' => 'nullable|min:6|confirmed',
             'permissions' => 'array',
         ]);
 
@@ -68,10 +74,6 @@ class UserController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
         ]);
-
-        if (!empty($validated['password'])) {
-            $utilisateur->update(['password' => Hash::make($validated['password'])]);
-        }
 
         $utilisateur->syncPermissions($validated['permissions'] ?? []);
 
@@ -81,6 +83,11 @@ class UserController extends Controller
     public function toggleStatus(User $utilisateur)
     {
         $utilisateur->update(['is_active' => !$utilisateur->is_active]);
+        
+        // Send email notification
+        $changedByName = Auth::user()->name;
+        Mail::to($utilisateur->email)->send(new AccountStatusMail($utilisateur->name, $utilisateur->is_active, $changedByName));
+        
         $message = $utilisateur->is_active ? 'Utilisateur activé.' : 'Utilisateur désactivé.';
         return back()->with('success', $message);
     }

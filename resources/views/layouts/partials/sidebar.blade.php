@@ -113,7 +113,7 @@
 
             {{-- Dropdown --}}
             <div class="sidebar-profile-dropdown" x-show="open" @click.away="open = false" x-cloak>
-                <a href="#">Mon profil</a>
+                <a href="{{ route('profile.show') }}">Mon profil</a>
                 <a href="#">Changer mot de passe</a>
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf

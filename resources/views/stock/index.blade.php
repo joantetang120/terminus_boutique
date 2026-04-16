@@ -7,10 +7,12 @@
                     <a href="{{ route('dashboard') }}">Accueil</a> > Inventaire > Stock
                 </div>
             </div>
+            @can('stock.create')
             <div style="display:flex;gap:8px;">
                 <button class="btn btn-success btn-sm" x-data @click="$dispatch('open-entry-modal')">+ Entrée stock</button>
                 <button class="btn btn-warning btn-sm" style="background:#E67E22;color:white;" x-data @click="$dispatch('open-exit-modal')">+ Sortie manuelle</button>
             </div>
+            @endcan
         </div>
     </div>
 
@@ -92,7 +94,20 @@
                             <span class="badge badge-danger">Annulation</span>
                         @endif
                     </td>
-                    <td>{{ number_format($movement->quantity, 2, ',', ' ') }}</td>
+                    <td>
+                        @if($movement->product)
+                            @if($movement->input_unit && $movement->input_unit !== $movement->product->unit)
+                                <span title="Converti: {{ $movement->quantity }} {{ $movement->product->unit }}">
+                                    {{ number_format($movement->input_quantity, 0, ',', ' ') }} {{ $movement->input_unit }}
+                                    <small style="color:#64748B;">({{ number_format($movement->quantity, 0, ',', ' ') }} {{ $movement->product->unit }})</small>
+                                </span>
+                            @else
+                                {{ number_format($movement->quantity, 0, ',', ' ') }} {{ $movement->product->unit }}
+                            @endif
+                        @else
+                            {{ number_format($movement->quantity, 0, ',', ' ') }} (unité inconnue)
+                        @endif
+                    </td>
                     <td>{{ $movement->reference_type ? '#' . $movement->reference_id : '—' }}</td>
                     <td>{{ $movement->createdBy->name ?? '—' }}</td>
                     <td>
@@ -137,16 +152,26 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="form-label" for="entry_product">Produit</label>
-                        <select class="form-select" id="entry_product" name="product_id" required>
+                        <select class="form-select" id="entry_product" name="product_id" required onchange="updateEntryUnitOptions()">
                             <option value="">Sélectionner...</option>
                             @foreach($products as $product)
-                            <option value="{{ $product->id }}">{{ $product->name }}</option>
+                            <option value="{{ $product->id }}" data-unit="{{ $product->unit }}" data-purchase-unit="{{ $product->purchase_unit }}" data-purchase-rate="{{ $product->purchase_conversion_rate }}">{{ $product->name }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="entry_qty">Quantité</label>
-                        <input class="form-input" type="number" id="entry_qty" name="quantity" min="0.01" step="0.01" required>
+                    <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;">
+                        <div class="form-group">
+                            <label class="form-label" for="entry_qty">Quantité</label>
+                            <input class="form-input" type="number" id="entry_qty" name="quantity" min="1" step="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="entry_unit">Unité</label>
+                            <select class="form-select" id="entry_unit" name="input_unit" required>
+                                <option value="">--</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="entry_conversion_info" style="display:none;padding:8px 12px;background:#F0FDF4;border:1px solid #86EFAC;border-radius:6px;margin-bottom:12px;font-size:0.75rem;color:#166534;">
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="entry_note">Note (optionnel)</label>
@@ -178,16 +203,43 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="form-label" for="exit_product">Produit</label>
-                        <select class="form-select" id="exit_product" name="product_id" required>
+                        <select class="form-select" id="exit_product" name="product_id" required onchange="updateExitUnitOptions()">
                             <option value="">Sélectionner...</option>
                             @foreach($products as $product)
-                            <option value="{{ $product->id }}">{{ $product->name }} ({{ $product->current_stock }} dispo)</option>
+                            @php
+                                $saleConversions = $product->saleConversions->map(fn($c) => ['unit' => $c->unit, 'rate' => $c->conversion_rate])->toArray();
+                                // Include legacy sale unit if exists and not already in conversions
+                                if ($product->sale_unit && !collect($saleConversions)->first(fn($c) => $c['unit'] === $product->sale_unit)) {
+                                    $saleConversions[] = ['unit' => $product->sale_unit, 'rate' => $product->sale_conversion_rate];
+                                }
+                            @endphp
+                            <option value="{{ $product->id }}"
+                                    data-unit="{{ $product->unit }}"
+                                    data-current="{{ $product->current_stock }}"
+                                    data-sale-unit="{{ $product->sale_unit }}"
+                                    data-sale-rate="{{ $product->sale_conversion_rate }}"
+                                    data-conversions='@json($saleConversions)'>
+                                {{ $product->name }} ({{ $product->current_stock }} {{ $product->unit }})
+                            </option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="exit_qty">Quantité</label>
-                        <input class="form-input" type="number" id="exit_qty" name="quantity" min="0.01" step="0.01" required>
+                    <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;">
+                        <div class="form-group">
+                            <label class="form-label" for="exit_qty">Quantité</label>
+                            <input class="form-input" type="number" id="exit_qty" name="quantity" min="1" step="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="exit_unit">Unité</label>
+                            <select class="form-select" id="exit_unit" name="input_unit" required>
+                                <option value="">--</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="exit_stock_info" style="padding:8px 12px;background:#F1F5F9;border-radius:6px;margin-bottom:12px;font-size:0.75rem;color:#475569;">
+                        Sélectionnez un produit
+                    </div>
+                    <div id="exit_conversion_info" style="display:none;padding:8px 12px;background:#FEF3C7;border:1px solid #FCD34D;border-radius:6px;margin-bottom:12px;font-size:0.75rem;color:#92400E;">
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="exit_note">Justification (obligatoire)</label>
@@ -214,7 +266,7 @@
                 <h3>⚠ Confirmer l'annulation</h3>
                 <button @click="open = false" style="background:none;border:none;cursor:pointer;font-size:1.25rem;">&times;</button>
             </div>
-            <form :action="'/stock/' + id + '/annuler'" method="POST">
+            <form :action="'/stock/' + id + '/cancel'" method="POST">
                 @csrf
                 <div class="modal-body">
                     <p style="margin-bottom:16px;color:#64748B;">Annuler le mouvement pour <strong x-text="product"></strong> ?</p>
@@ -230,4 +282,105 @@
             </form>
         </div>
     </div>
+<script>
+function updateEntryUnitOptions() {
+    const productSelect = document.getElementById('entry_product');
+    const unitSelect = document.getElementById('entry_unit');
+    const conversionInfo = document.getElementById('entry_conversion_info');
+    
+    const selectedOption = productSelect.options[productSelect.selectedIndex];
+    
+    if (!selectedOption.value) {
+        unitSelect.innerHTML = '<option value="">--</option>';
+        conversionInfo.style.display = 'none';
+        return;
+    }
+    
+    const baseUnit = selectedOption.dataset.unit;
+    const purchaseUnit = selectedOption.dataset.purchaseUnit;
+    const purchaseRate = selectedOption.dataset.purchaseRate;
+    
+    let options = `<option value="${baseUnit}" selected>${baseUnit}</option>`;
+    
+    if (purchaseUnit && purchaseRate) {
+        options += `<option value="${purchaseUnit}">${purchaseUnit}</option>`;
+    }
+    
+    unitSelect.innerHTML = options;
+    
+    if (purchaseUnit && purchaseRate) {
+        conversionInfo.innerHTML = `Conversion: 1 ${purchaseUnit} = ${purchaseRate} ${baseUnit}`;
+        conversionInfo.style.display = 'block';
+    } else {
+        conversionInfo.style.display = 'none';
+    }
+}
+
+function updateExitUnitOptions() {
+    const productSelect = document.getElementById('exit_product');
+    const unitSelect = document.getElementById('exit_unit');
+    const stockInfo = document.getElementById('exit_stock_info');
+    const conversionInfo = document.getElementById('exit_conversion_info');
+
+    const selectedOption = productSelect.options[productSelect.selectedIndex];
+
+    if (!selectedOption.value) {
+        unitSelect.innerHTML = '<option value="">--</option>';
+        stockInfo.innerHTML = 'Sélectionnez un produit';
+        conversionInfo.style.display = 'none';
+        return;
+    }
+
+    const baseUnit = selectedOption.dataset.unit;
+    const currentStock = parseInt(selectedOption.dataset.current) || 0;
+
+    // Parse all sale conversions
+    let conversions = [];
+    try {
+        conversions = JSON.parse(selectedOption.dataset.conversions || '[]');
+    } catch (e) {
+        conversions = [];
+    }
+
+    // Add legacy sale unit if exists and not in conversions
+    const legacyUnit = selectedOption.dataset.saleUnit;
+    const legacyRate = parseInt(selectedOption.dataset.saleRate) || 0;
+    if (legacyUnit && legacyRate && !conversions.find(c => c.unit === legacyUnit)) {
+        conversions.push({ unit: legacyUnit, rate: legacyRate });
+    }
+
+    // Build unit options
+    let options = `<option value="${baseUnit}" selected>${baseUnit}</option>`;
+    conversions.forEach(conv => {
+        if (conv.unit && conv.rate) {
+            options += `<option value="${conv.unit}">${conv.unit}</option>`;
+        }
+    });
+    unitSelect.innerHTML = options;
+
+    // Calculate stock display with all conversions
+    let stockDisplay = `Stock: ${currentStock} ${baseUnit}`;
+    conversions.forEach(conv => {
+        if (conv.unit && conv.rate) {
+            const stockInUnit = Math.floor(currentStock / conv.rate);
+            stockDisplay += ` (${stockInUnit} ${conv.unit})`;
+        }
+    });
+    stockInfo.innerHTML = stockDisplay;
+
+    // Show conversion info for first conversion
+    if (conversions.length > 0 && conversions[0].unit && conversions[0].rate) {
+        let convInfo = 'Conversions:<br>';
+        conversions.forEach(conv => {
+            if (conv.unit && conv.rate) {
+                convInfo += `1 ${conv.unit} = ${conv.rate} ${baseUnit}<br>`;
+            }
+        });
+        conversionInfo.innerHTML = convInfo;
+        conversionInfo.style.display = 'block';
+    } else {
+        conversionInfo.style.display = 'none';
+    }
+}
+</script>
 </x-app-layout>

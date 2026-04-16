@@ -1,4 +1,4 @@
-<x-app-layout title="Nouveau produit">
+<x-app-layout title="Modifier produit">
     <div class="product-form-wrapper">
         {{-- Back / Cancel Button --}}
         <a href="{{ route('produits.index') }}" class="back-button" id="backButton">
@@ -11,14 +11,15 @@
 
         {{-- Form Header --}}
         <div class="form-page-header">
-            <div class="header-badge">
+            <div class="header-badge edit">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 5v14M5 12h14"/>
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
-                <span>Création</span>
+                <span>Modification</span>
             </div>
-            <h1 class="form-page-title">Nouveau produit</h1>
-            <p class="form-page-subtitle">Ajoutez un produit à votre inventaire avec toutes ses informations</p>
+            <h1 class="form-page-title">Modifier le produit</h1>
+            <p class="form-page-subtitle">{{ $produit->name }}</p>
         </div>
 
         {{-- Progress Steps --}}
@@ -55,8 +56,9 @@
             </div>
         </div>
 
-        <form action="{{ route('produits.store') }}" method="POST" id="productForm" x-data="{ showBackModal: false }">
+        <form action="{{ route('produits.update', $produit) }}" method="POST" id="productForm" x-data="{ showBackModal: false }">
             @csrf
+            @method('PUT')
 
             {{-- Step 1: Basic Information --}}
             <div class="form-card" id="step-1">
@@ -82,7 +84,7 @@
                         <input type="text" 
                                id="name" 
                                name="name" 
-                               value="{{ old('name') }}"
+                               value="{{ old('name', $produit->name) }}"
                                class="styled-input" 
                                placeholder="Ex: Cahier A4 200 pages"
                                required
@@ -105,7 +107,7 @@
                                   name="description" 
                                   rows="4"
                                   class="styled-textarea"
-                                  placeholder="Décrivez votre produit en quelques mots...">{{ old('description') }}</textarea>
+                                  placeholder="Décrivez votre produit en quelques mots...">{{ old('description', $produit->description) }}</textarea>
                         @error('description')
                             <div class="error-message">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -163,22 +165,22 @@
                             </label>
                             <div class="select-wrapper">
                                 <select id="unit" name="unit" class="styled-select" required onchange="updateUnitLabels()">
-                                    <option value="piece" {{ old('unit') === 'piece' ? 'selected' : '' }}>Pièce (unité)</option>
-                                    <option value="paquet" {{ old('unit') === 'paquet' ? 'selected' : '' }}>Paquet</option>
-                                    <option value="boite" {{ old('unit') === 'boite' ? 'selected' : '' }}>Boîte</option>
-                                    <option value="carton" {{ old('unit') === 'carton' ? 'selected' : '' }}>Carton</option>
-                                    <option value="sceau" {{ old('unit') === 'sceau' ? 'selected' : '' }}>Sceau</option>
-                                    <option value="sacs" {{ old('unit') === 'sacs' ? 'selected' : '' }}>Sacs</option>
-                                    <option value="palettes" {{ old('unit') === 'palettes' ? 'selected' : '' }}>Palettes</option>
+                                    <option value="piece" {{ old('unit', $produit->unit) === 'piece' ? 'selected' : '' }}>Pièce (unité)</option>
+                                    <option value="paquet" {{ old('unit', $produit->unit) === 'paquet' ? 'selected' : '' }}>Paquet</option>
+                                    <option value="boite" {{ old('unit', $produit->unit) === 'boite' ? 'selected' : '' }}>Boîte</option>
+                                    <option value="carton" {{ old('unit', $produit->unit) === 'carton' ? 'selected' : '' }}>Carton</option>
+                                    <option value="sceau" {{ old('unit', $produit->unit) === 'sceau' ? 'selected' : '' }}>Sceau</option>
+                                    <option value="sacs" {{ old('unit', $produit->unit) === 'sacs' ? 'selected' : '' }}>Sacs</option>
+                                    <option value="palettes" {{ old('unit', $produit->unit) === 'palettes' ? 'selected' : '' }}>Palettes</option>
                                 </select>
                             </div>
-                            <p class="field-note">
+                            <p class="field-note warning">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <line x1="12" y1="16" x2="12" y2="12"/>
-                                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                    <line x1="12" y1="9" x2="12" y2="13"/>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"/>
                                 </svg>
-                                Tout le stock sera compté dans cette unité
+                                Changer l'unité de base n'affecte pas le stock existant
                             </p>
                             @error('unit')
                                 <div class="error-message">
@@ -222,15 +224,15 @@
                                 <div class="field-group">
                                     <label class="field-label">Unité fournisseur</label>
                                     <div class="select-wrapper">
-                                        <select id="purchase_unit" name="purchase_unit" class="styled-select" onchange="updateStockPreview()">
+                                        <select id="purchase_unit" name="purchase_unit" class="styled-select">
                                             <option value="">Identique à la base</option>
-                                            <option value="piece" {{ old('purchase_unit') === 'piece' ? 'selected' : '' }}>Pièce</option>
-                                            <option value="paquet" {{ old('purchase_unit') === 'paquet' ? 'selected' : '' }}>Paquet</option>
-                                            <option value="boite" {{ old('purchase_unit') === 'boite' ? 'selected' : '' }}>Boîte</option>
-                                            <option value="carton" {{ old('purchase_unit') === 'carton' ? 'selected' : '' }}>Carton</option>
-                                            <option value="sceau" {{ old('purchase_unit') === 'sceau' ? 'selected' : '' }}>Sceau</option>
-                                            <option value="sacs" {{ old('purchase_unit') === 'sacs' ? 'selected' : '' }}>Sacs</option>
-                                            <option value="palettes" {{ old('purchase_unit') === 'palettes' ? 'selected' : '' }}>Palettes</option>
+                                            <option value="piece" {{ old('purchase_unit', $produit->purchase_unit) === 'piece' ? 'selected' : '' }}>Pièce</option>
+                                            <option value="paquet" {{ old('purchase_unit', $produit->purchase_unit) === 'paquet' ? 'selected' : '' }}>Paquet</option>
+                                            <option value="boite" {{ old('purchase_unit', $produit->purchase_unit) === 'boite' ? 'selected' : '' }}>Boîte</option>
+                                            <option value="carton" {{ old('purchase_unit', $produit->purchase_unit) === 'carton' ? 'selected' : '' }}>Carton</option>
+                                            <option value="sceau" {{ old('purchase_unit', $produit->purchase_unit) === 'sceau' ? 'selected' : '' }}>Sceau</option>
+                                            <option value="sacs" {{ old('purchase_unit', $produit->purchase_unit) === 'sacs' ? 'selected' : '' }}>Sacs</option>
+                                            <option value="palettes" {{ old('purchase_unit', $produit->purchase_unit) === 'palettes' ? 'selected' : '' }}>Palettes</option>
                                         </select>
                                     </div>
                                 </div>
@@ -241,7 +243,7 @@
                                         <input type="number" 
                                                id="purchase_conversion_rate" 
                                                name="purchase_conversion_rate"
-                                               value="{{ old('purchase_conversion_rate') }}" 
+                                               value="{{ old('purchase_conversion_rate', $produit->purchase_conversion_rate) }}" 
                                                min="1"
                                                class="styled-input rate-input" 
                                                placeholder="12">
@@ -290,7 +292,7 @@
                                                                min="1"
                                                                class="styled-input rate-input" 
                                                                placeholder="12">
-                                                        <span class="rate-suffix base-unit-label">pièces</span>
+                                                        <span class="rate-suffix base-unit-label">{{ $produit->unit }}</span>
                                                     </div>
                                                 </div>
                                                 <button type="button" class="btn-remove-conversion" onclick="removeConversion(this)" title="Supprimer">
@@ -302,6 +304,89 @@
                                             </div>
                                         </div>
                                     @endforeach
+                                @elseif($produit->saleConversions->count() > 0)
+                                    @foreach($produit->saleConversions as $index => $conversion)
+                                        <div class="conversion-row" data-index="{{ $index }}">
+                                            <div class="conversion-fields">
+                                                <div class="field-group">
+                                                    <label class="field-label">Unité de vente</label>
+                                                    <div class="select-wrapper">
+                                                        <select name="sale_conversions[{{ $index }}][unit]" class="styled-select sale-unit-select" onchange="updateSaleSuffixes()">
+                                                            <option value="">Identique à la base</option>
+                                                            <option value="piece" {{ $conversion->unit === 'piece' ? 'selected' : '' }}>Pièce</option>
+                                                            <option value="paquet" {{ $conversion->unit === 'paquet' ? 'selected' : '' }}>Paquet</option>
+                                                            <option value="boite" {{ $conversion->unit === 'boite' ? 'selected' : '' }}>Boîte</option>
+                                                            <option value="carton" {{ $conversion->unit === 'carton' ? 'selected' : '' }}>Carton</option>
+                                                            <option value="sceau" {{ $conversion->unit === 'sceau' ? 'selected' : '' }}>Sceau</option>
+                                                            <option value="sacs" {{ $conversion->unit === 'sacs' ? 'selected' : '' }}>Sacs</option>
+                                                            <option value="palettes" {{ $conversion->unit === 'palettes' ? 'selected' : '' }}>Palettes</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="field-group">
+                                                    <label class="field-label">Taux de conversion</label>
+                                                    <div class="rate-input-group">
+                                                        <span class="rate-prefix">1 <span class="sale-unit-label">{{ $conversion->unit }}</span> =</span>
+                                                        <input type="number" 
+                                                               name="sale_conversions[{{ $index }}][conversion_rate]"
+                                                               value="{{ $conversion->conversion_rate }}" 
+                                                               min="1"
+                                                               class="styled-input rate-input" 
+                                                               placeholder="12">
+                                                        <span class="rate-suffix base-unit-label">{{ $produit->unit }}</span>
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="btn-remove-conversion" onclick="removeConversion(this)" title="Supprimer">
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <line x1="18" y1="6" x2="6" y2="18"/>
+                                                        <line x1="6" y1="6" x2="18" y2="18"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                @else
+                                    {{-- Legacy: Show single conversion if exists --}}
+                                    @if($produit->sale_unit)
+                                        <div class="conversion-row" data-index="0">
+                                            <div class="conversion-fields">
+                                                <div class="field-group">
+                                                    <label class="field-label">Unité de vente</label>
+                                                    <div class="select-wrapper">
+                                                        <select name="sale_conversions[0][unit]" class="styled-select sale-unit-select" onchange="updateSaleSuffixes()">
+                                                            <option value="">Identique à la base</option>
+                                                            <option value="piece" {{ $produit->sale_unit === 'piece' ? 'selected' : '' }}>Pièce</option>
+                                                            <option value="paquet" {{ $produit->sale_unit === 'paquet' ? 'selected' : '' }}>Paquet</option>
+                                                            <option value="boite" {{ $produit->sale_unit === 'boite' ? 'selected' : '' }}>Boîte</option>
+                                                            <option value="carton" {{ $produit->sale_unit === 'carton' ? 'selected' : '' }}>Carton</option>
+                                                            <option value="sceau" {{ $produit->sale_unit === 'sceau' ? 'selected' : '' }}>Sceau</option>
+                                                            <option value="sacs" {{ $produit->sale_unit === 'sacs' ? 'selected' : '' }}>Sacs</option>
+                                                            <option value="palettes" {{ $produit->sale_unit === 'palettes' ? 'selected' : '' }}>Palettes</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="field-group">
+                                                    <label class="field-label">Taux de conversion</label>
+                                                    <div class="rate-input-group">
+                                                        <span class="rate-prefix">1 <span class="sale-unit-label">{{ $produit->sale_unit }}</span> =</span>
+                                                        <input type="number" 
+                                                               name="sale_conversions[0][conversion_rate]"
+                                                               value="{{ $produit->sale_conversion_rate }}" 
+                                                               min="1"
+                                                               class="styled-input rate-input" 
+                                                               placeholder="12">
+                                                        <span class="rate-suffix base-unit-label">{{ $produit->unit }}</span>
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="btn-remove-conversion" onclick="removeConversion(this)" title="Supprimer">
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <line x1="18" y1="6" x2="6" y2="18"/>
+                                                        <line x1="6" y1="6" x2="18" y2="18"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @endif
                                 @endif
                             </div>
                             <button type="button" class="btn-add-conversion" onclick="addSaleConversion()">
@@ -374,7 +459,7 @@
                 </div>
             </div>
 
-            {{-- Step 3: Stock Management --}}
+            {{-- Step 3: Stock & Alerts --}}
             <div class="form-card hidden" id="step-3">
                 <div class="card-header">
                     <div class="header-icon-box">
@@ -385,42 +470,39 @@
                         </svg>
                     </div>
                     <div class="header-text">
-                        <h2>Stock initial</h2>
-                        <p>Quantité de départ et seuil d'alerte</p>
+                        <h2>Stock et Alertes</h2>
+                        <p>Quantité actuelle et seuil d'alerte</p>
                     </div>
                 </div>
 
                 <div class="card-body">
-                    {{-- Stock Input --}}
-                    <div class="stock-input-section">
+                    {{-- Current Stock --}}
+                    <div class="highlight-card amber">
+                        <div class="highlight-badge amber">Stock actuel</div>
                         <div class="field-group">
                             <label for="current_stock" class="field-label">
-                                Quantité initiale
+                                Quantité en stock
                                 <span class="required-dot" title="Requis"></span>
                             </label>
-                            <div class="stock-input-wrapper">
+                            <div class="stock-input-display">
                                 <input type="number" 
                                        id="current_stock" 
                                        name="current_stock"
-                                       value="{{ old('current_stock', 0) }}" 
+                                       value="{{ old('current_stock', $produit->current_stock) }}" 
                                        min="0" 
                                        step="1"
-                                       class="styled-input stock-number-input" 
-                                       required
-                                       oninput="updateStockPreview()">
-                                <div class="stock-unit-select">
-                                    <select id="initial_stock_unit" name="initial_stock_unit" class="styled-select" onchange="updateStockPreview()">
-                                        <option value="">-- <span id="default-unit-label">pièce</span> (base) --</option>
-                                        <option value="carton" {{ old('initial_stock_unit') === 'carton' ? 'selected' : '' }}>carton</option>
-                                        <option value="boite" {{ old('initial_stock_unit') === 'boite' ? 'selected' : '' }}>boite</option>
-                                        <option value="paquet" {{ old('initial_stock_unit') === 'paquet' ? 'selected' : '' }}>paquet</option>
-                                        <option value="piece" {{ old('initial_stock_unit') === 'piece' ? 'selected' : '' }}>piece</option>
-                                        <option value="sceau" {{ old('initial_stock_unit') === 'sceau' ? 'selected' : '' }}>sceau</option>
-                                        <option value="sacs" {{ old('initial_stock_unit') === 'sacs' ? 'selected' : '' }}>sacs</option>
-                                        <option value="palettes" {{ old('initial_stock_unit') === 'palettes' ? 'selected' : '' }}>palettes</option>
-                                    </select>
-                                </div>
+                                       class="styled-input stock-number-input-edit" 
+                                       required>
+                                <span class="stock-unit-badge" id="stock-unit-display">{{ $produit->unit }}s</span>
                             </div>
+                            <p class="field-note warning">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                    <line x1="12" y1="9" x2="12" y2="13"/>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                </svg>
+                                Modification manuelle — privilégiez les mouvements de stock normalement
+                            </p>
                             @error('current_stock')
                                 <div class="error-message">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -431,73 +513,6 @@
                                     <span>{{ $message }}</span>
                                 </div>
                             @enderror
-                            @error('initial_stock_unit')
-                                <div class="error-message">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <line x1="12" y1="8" x2="12" y2="12"/>
-                                        <line x1="12" y1="16" x2="12.01" y2="16"/>
-                                    </svg>
-                                    <span>{{ $message }}</span>
-                                </div>
-                            @enderror
-                        </div>
-
-                        {{-- Conversion Rate Field (shown when needed) --}}
-                        <div class="field-group" id="stock-conversion-field" style="display:none;">
-                            <label for="initial_stock_conversion_rate" class="field-label">
-                                Taux de conversion
-                                <span class="required-dot" title="Requis"></span>
-                            </label>
-                            <div class="rate-input-group">
-                                <span class="rate-prefix">1 <span id="stock-unit-label">carton</span> =</span>
-                                <input type="number" 
-                                       id="initial_stock_conversion_rate" 
-                                       name="initial_stock_conversion_rate"
-                                       value="{{ old('initial_stock_conversion_rate') }}" 
-                                       min="1"
-                                       class="styled-input rate-input" 
-                                       placeholder="12"
-                                       oninput="updateStockPreview()">
-                                <span class="rate-suffix" id="base-unit-display">pièces</span>
-                            </div>
-                            @error('initial_stock_conversion_rate')
-                                <div class="error-message">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <line x1="12" y1="8" x2="12" y2="12"/>
-                                        <line x1="12" y1="16" x2="12.01" y2="16"/>
-                                    </svg>
-                                    <span>{{ $message }}</span>
-                                </div>
-                            @enderror
-                        </div>
-                    </div>
-
-                    {{-- Stock Preview Card --}}
-                    <div class="preview-card" id="stock-preview">
-                        <div class="preview-header">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                <circle cx="12" cy="12" r="3"/>
-                            </svg>
-                            <span>Aperçu du stock</span>
-                        </div>
-                        <div class="preview-body">
-                            <div class="preview-row">
-                                <span class="preview-label">Votre saisie</span>
-                                <span class="preview-value" id="preview-input">0</span>
-                            </div>
-                            <div class="preview-arrow">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="12" y1="5" x2="12" y2="19"/>
-                                    <polyline points="19 12 12 19 5 12"/>
-                                </svg>
-                            </div>
-                            <div class="preview-row highlighted">
-                                <span class="preview-label">Stock réel en base</span>
-                                <span class="preview-value large" id="preview-base">0 <span id="preview-base-unit">pièces</span></span>
-                            </div>
                         </div>
                     </div>
 
@@ -515,11 +530,11 @@
                                 <input type="number" 
                                        id="alert_threshold" 
                                        name="alert_threshold"
-                                       value="{{ old('alert_threshold', 0) }}" 
+                                       value="{{ old('alert_threshold', $produit->alert_threshold) }}" 
                                        min="0" 
                                        step="1"
                                        class="styled-input alert-number-input">
-                                <span class="alert-unit-label" id="alert-unit-label">pièces</span>
+                                <span class="alert-unit-label" id="alert-unit-label">{{ $produit->unit }}s</span>
                             </div>
                             <p class="field-note">
                                 Notification automatique quand le stock passe sous ce seuil
@@ -543,7 +558,7 @@
                             <input type="checkbox" 
                                    name="is_active" 
                                    value="1"
-                                   {{ old('is_active', true) ? 'checked' : '' }} 
+                                   {{ old('is_active', $produit->is_active) ? 'checked' : '' }} 
                                    class="toggle-input">
                             <div class="toggle-track">
                                 <div class="toggle-thumb"></div>
@@ -580,7 +595,7 @@
                             <polyline points="17 21 17 13 7 13 7 21"/>
                             <polyline points="7 3 7 8 15 8"/>
                         </svg>
-                        <span>Créer le produit</span>
+                        <span>Mettre à jour</span>
                     </button>
                 </div>
             </div>
@@ -614,6 +629,10 @@
     letter-spacing: 0.5px;
 }
 
+.header-badge.edit {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
 .form-page-title {
     font-size: 2rem;
     font-weight: 700;
@@ -627,6 +646,7 @@
     font-size: 1rem;
     margin: 0;
     line-height: 1.5;
+    font-weight: 500;
 }
 
 /* Progress Tracker */
@@ -743,12 +763,12 @@
     width: 52px;
     height: 52px;
     border-radius: 14px;
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
     flex-shrink: 0;
 }
 
@@ -833,9 +853,9 @@
 .styled-textarea:focus,
 .styled-select:focus {
     outline: none;
-    border-color: #6366f1;
+    border-color: #f59e0b;
     background: white;
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
 }
 
 .styled-textarea {
@@ -882,6 +902,14 @@
     flex-shrink: 0;
 }
 
+.field-note.warning {
+    color: #92400e;
+}
+
+.field-note.warning svg {
+    color: #f59e0b;
+}
+
 .error-message {
     display: flex;
     align-items: center;
@@ -905,6 +933,11 @@
     position: relative;
 }
 
+.highlight-card.amber {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-color: #f59e0b;
+}
+
 .highlight-badge {
     position: absolute;
     top: -10px;
@@ -917,6 +950,10 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+.highlight-badge.amber {
+    background: #f59e0b;
 }
 
 /* Conversion Section */
@@ -1027,88 +1064,40 @@
     box-shadow: none;
 }
 
-/* Stock Input Section */
-.stock-input-section {
-    margin-bottom: 28px;
-}
-
-.stock-input-wrapper {
+/* Stock Input Display */
+.stock-input-display {
     display: flex;
+    align-items: center;
     gap: 12px;
+    padding: 8px;
+    background: #f9fafb;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
 }
 
-.stock-number-input {
+.stock-number-input-edit {
     flex: 1;
     text-align: center;
-    font-size: 1.125rem;
+    font-size: 1.25rem;
     font-weight: 600;
-    padding: 14px 16px;
+    padding: 12px;
+    border: none;
+    background: transparent;
 }
 
-.stock-unit-select {
-    width: 200px;
+.stock-number-input-edit:focus {
+    box-shadow: none;
+    outline: none;
 }
 
-/* Preview Card */
-.preview-card {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    border: 2px solid #f59e0b;
-    border-radius: 14px;
-    padding: 20px;
-    margin-bottom: 28px;
-}
-
-.preview-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.875rem;
-    font-weight: 600;
+.stock-unit-badge {
+    padding: 12px 20px;
+    background: #fef3c7;
     color: #92400e;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px dashed #f59e0b;
-}
-
-.preview-body {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.preview-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.6);
-    border-radius: 10px;
-}
-
-.preview-row.highlighted {
-    background: white;
-    border: 2px solid #f59e0b;
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
-}
-
-.preview-label {
-    font-size: 0.8125rem;
-    color: #78716c;
-}
-
-.preview-value {
+    border-radius: 8px;
     font-size: 0.9375rem;
     font-weight: 600;
-    color: #1c1917;
-}
-
-.preview-value.large {
-    font-size: 1.125rem;
-}
-
-.preview-arrow {
-    text-align: center;
-    color: #f59e0b;
+    text-transform: lowercase;
 }
 
 /* Alert Section */
@@ -1249,16 +1238,16 @@
 }
 
 .btn-success {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     color: white;
     font-size: 1rem;
     padding: 14px 32px;
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
 }
 
 .btn-success:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35);
 }
 
 /* Responsive */
@@ -1294,14 +1283,6 @@
 
     .conversion-fields {
         grid-template-columns: 1fr;
-    }
-
-    .stock-input-wrapper {
-        flex-direction: column;
-    }
-
-    .stock-unit-select {
-        width: 100%;
     }
 }
 </style>
@@ -1339,85 +1320,14 @@ function updateUnitLabels() {
     const unitSelect = document.getElementById('unit');
     const baseUnit = unitSelect.value;
 
-    document.getElementById('default-unit-label').textContent = baseUnit;
+    document.getElementById('stock-unit-display').textContent = baseUnit + 's';
     document.getElementById('alert-unit-label').textContent = baseUnit + 's';
-    document.getElementById('preview-base-unit').textContent = baseUnit + 's';
-    document.getElementById('base-unit-display').textContent = baseUnit + 's';
     document.getElementById('sale-rate-suffix').textContent = baseUnit + 's';
-
-    const initialUnitSelect = document.getElementById('initial_stock_unit');
-    initialUnitSelect.options[0].text = '-- ' + baseUnit + ' (base) --';
-
-    updateStockPreview();
-}
-
-// Stock preview calculation
-function updateStockPreview() {
-    const quantity = parseInt(document.getElementById('current_stock').value) || 0;
-    const inputUnit = document.getElementById('initial_stock_unit').value;
-    const baseUnit = document.getElementById('unit').value;
-    const purchaseUnit = document.getElementById('purchase_unit').value;
-    const purchaseRate = parseInt(document.getElementById('purchase_conversion_rate').value) || 0;
-    const manualRate = parseInt(document.getElementById('initial_stock_conversion_rate').value) || 0;
-
-    let convertedQuantity = quantity;
-    let rate = 1;
-    let needsManualRate = false;
-
-    if (inputUnit && inputUnit !== baseUnit) {
-        if (inputUnit === purchaseUnit && purchaseRate > 0) {
-            rate = purchaseRate;
-        } else {
-            // Check multiple sale conversions
-            const saleConversions = document.querySelectorAll('#sale-conversions-container .conversion-row');
-            let foundRate = null;
-            saleConversions.forEach(row => {
-                const unitSelect = row.querySelector('select[name*="[unit]"]');
-                const rateInput = row.querySelector('input[name*="[conversion_rate]"]');
-                if (unitSelect && rateInput && unitSelect.value === inputUnit) {
-                    const convRate = parseInt(rateInput.value) || 0;
-                    if (convRate > 0) {
-                        foundRate = convRate;
-                    }
-                }
-            });
-
-            if (foundRate !== null) {
-                rate = foundRate;
-            } else if (manualRate > 0) {
-                rate = manualRate;
-            } else {
-                needsManualRate = true;
-            }
-        }
-        convertedQuantity = quantity * rate;
-    }
-
-    const conversionField = document.getElementById('stock-conversion-field');
-    const stockUnitLabel = document.getElementById('stock-unit-label');
-
-    if (needsManualRate) {
-        conversionField.style.display = 'block';
-    } else {
-        conversionField.style.display = 'none';
-        if (inputUnit && inputUnit !== baseUnit) {
-            document.getElementById('initial_stock_conversion_rate').value = rate;
-        }
-    }
-
-    stockUnitLabel.textContent = inputUnit || baseUnit;
-
-    const inputText = quantity + ' ' + (inputUnit || baseUnit) + (quantity > 1 ? 's' : '');
-    const baseText = convertedQuantity + ' ' + baseUnit + (convertedQuantity > 1 ? 's' : '');
-
-    document.getElementById('preview-input').textContent = inputText;
-    document.getElementById('preview-base').textContent = baseText;
 }
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-    updateUnitLabels();
-    updateStockPreview();
+    document.getElementById('unit').addEventListener('change', updateUnitLabels);
 });
 </script>
 
@@ -1433,7 +1343,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </svg>
                 </div>
                 <h3 class="modal-title">Quitter sans enregistrer ?</h3>
-                <p class="modal-desc">Les informations saisies seront perdues.</p>
+                <p class="modal-desc">Les modifications ne seront pas sauvegardées.</p>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn-secondary" id="modalCancel">
@@ -1497,11 +1407,11 @@ document.addEventListener('keydown', function(e) {
 });
 
 // Dynamic Sale Conversions
-let saleConversionIndex = {{ old('sale_conversions') ? count(old('sale_conversions')) : 0 }};
+let saleConversionIndex = {{ max(old('sale_conversions') ? count(old('sale_conversions')) : 0, $produit->saleConversions->count() ?: ($produit->sale_unit ? 1 : 0)) }};
 
 function addSaleConversion() {
     const container = document.getElementById('sale-conversions-container');
-    const baseUnit = document.getElementById('unit').value || 'pièce';
+    const baseUnit = document.getElementById('unit').value || '{{ $produit->unit }}';
     
     const row = document.createElement('div');
     row.className = 'conversion-row';
@@ -1556,7 +1466,7 @@ function removeConversion(button) {
 }
 
 function updateSaleSuffixes() {
-    const baseUnit = document.getElementById('unit').value || 'pièce';
+    const baseUnit = document.getElementById('unit').value || '{{ $produit->unit }}';
     document.querySelectorAll('.base-unit-label').forEach(el => {
         el.textContent = baseUnit;
     });
@@ -1658,29 +1568,6 @@ document.getElementById('unit').addEventListener('change', updateSaleSuffixes);
     justify-content: center;
 }
 
-.btn-danger {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px 24px;
-    border: none;
-    border-radius: 12px;
-    font-size: 0.9375rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    color: white;
-    text-decoration: none;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
-}
-
-.btn-danger:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
-}
-
 /* Back Button */
 .back-button {
     display: inline-flex;
@@ -1703,6 +1590,29 @@ document.getElementById('unit').addEventListener('change', updateSaleSuffixes);
     background: #f8fafc;
     color: #0f172a;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
 }
 
 [x-cloak] { display: none !important; }
