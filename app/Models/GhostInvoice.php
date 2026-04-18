@@ -14,13 +14,15 @@ class GhostInvoice extends Model
     protected $fillable = [
         'real_invoice_id',
         'number',
-        'type',
         'status',
         'client_name',
         'client_phone',
         'total',
-        'advance_amount',
+        'paid_amount',
         'balance',
+        'due_date',
+        'cancelled_at',
+        'cancel_reason',
         'created_by',
     ];
 
@@ -28,8 +30,10 @@ class GhostInvoice extends Model
     {
         return [
             'total' => 'decimal:2',
-            'advance_amount' => 'decimal:2',
+            'paid_amount' => 'decimal:2',
             'balance' => 'decimal:2',
+            'due_date' => 'date',
+            'cancelled_at' => 'datetime',
         ];
     }
 
