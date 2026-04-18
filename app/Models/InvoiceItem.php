@@ -13,9 +13,11 @@ class InvoiceItem extends Model
 
     protected $fillable = [
         'invoice_id',
+        'product_id',
         'designation',
-        'unit',
-        'quantity',
+        'unit_sold',
+        'quantity_sold',
+        'quantity_deducted',
         'unit_price',
         'original_price',
         'total_price',
@@ -24,7 +26,8 @@ class InvoiceItem extends Model
     protected function casts(): array
     {
         return [
-            'quantity' => 'decimal:2',
+            'quantity_sold' => 'decimal:2',
+            'quantity_deducted' => 'decimal:2',
             'unit_price' => 'decimal:2',
             'original_price' => 'decimal:2',
             'total_price' => 'decimal:2',
@@ -34,12 +37,17 @@ class InvoiceItem extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['designation', 'quantity', 'unit_price', 'total_price'])
+            ->logOnly(['designation', 'quantity_sold', 'unit_sold', 'unit_price', 'total_price'])
             ->logOnlyDirty();
     }
 
     public function invoice()
     {
         return $this->belongsTo(Invoice::class);
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
     }
 }

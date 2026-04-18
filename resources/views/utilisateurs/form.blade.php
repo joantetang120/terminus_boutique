@@ -55,6 +55,36 @@
                 <button type="button" class="btn btn-secondary btn-sm" onclick="deselectAll()">Tout désélectionner</button>
             </div>
 
+            {{-- Facturation — permissions spéciales : view, create, cancel, print, payment --}}
+            <div style="margin-bottom:16px;padding:12px 16px;background:#F8FAFC;border-radius:8px;border:1px solid #E2E8F0;">
+                <div style="font-weight:600;margin-bottom:8px;color:#1A202C;">Facturation</div>
+                <div style="display:flex;flex-wrap:wrap;gap:16px;">
+                    @php
+                        $facturePerms = [
+                            'facture.view' => 'Voir',
+                            'facture.create' => 'Créer',
+                            'facture.cancel' => 'Annuler',
+                            'facture.print' => 'Imprimer',
+                            'facture.payment' => 'Paiement (Comptabilité)',
+                        ];
+                        $allPerms = ($permissions ?? collect())->flatten()->pluck('name')->toArray();
+                    @endphp
+                    @foreach($facturePerms as $pName => $pLabel)
+                        @php
+                            $pExists = in_array($pName, $allPerms);
+                            $pChecked = isset($utilisateur) && $pExists ? $utilisateur->hasPermissionTo($pName) : false;
+                        @endphp
+                        @if($pExists)
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                            <input type="checkbox" name="permissions[]" value="{{ $pName }}" {{ $pChecked ? 'checked' : '' }}>
+                            <span style="font-size:0.875rem;">{{ $pLabel }}</span>
+                        </label>
+                        @endif
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Modules standards : view, create, edit, cancel --}}
             <div class="permissions-grid" style="grid-template-columns:repeat(5,1fr);">
                 <div class="perm-header">Module</div>
                 <div class="perm-header">Voir</div>
@@ -64,16 +94,13 @@
 
                 @php
                     $moduleList = [
-                        'facture' => 'Facturation',
                         'stock' => 'Stock',
                         'compta' => 'Comptabilité',
-                        'ghost' => 'Fact. Fantôme',
                         'user' => 'Utilisateurs',
                         'audit' => "Journal d'audit",
                         'product' => 'Produits',
                     ];
                     $actionList = ['view', 'create', 'edit', 'cancel'];
-                    $allPerms = ($permissions ?? collect())->flatten()->pluck('name')->toArray();
                 @endphp
 
                 @foreach($moduleList as $mKey => $mLabel)
@@ -83,8 +110,8 @@
                     $pName = $mKey . '.' . $act;
                     $pExists = in_array($pName, $allPerms);
                     $pChecked = isset($utilisateur) && $pExists ? $utilisateur->hasPermissionTo($pName) : false;
-                    /* cancel doesn't exist for ghost, user, audit, product */
-                    $showCheckbox = $pExists && !($act === 'cancel' && in_array($mKey, ['ghost', 'user', 'audit', 'product']));
+                    /* cancel doesn't exist for user, audit, product */
+                    $showCheckbox = $pExists && !($act === 'cancel' && in_array($mKey, ['user', 'audit', 'product']));
                 @endphp
                 <div class="perm-cell">
                     @if($showCheckbox)
@@ -95,6 +122,20 @@
                 </div>
                 @endforeach
                 @endforeach
+            </div>
+
+            {{-- Ghost — permission individuelle --}}
+            @php
+                $ghostPerm = 'ghost.view';
+                $ghostExists = in_array($ghostPerm, $allPerms);
+                $ghostChecked = isset($utilisateur) && $ghostExists ? $utilisateur->hasPermissionTo($ghostPerm) : false;
+            @endphp
+            <div style="margin-top:12px;padding:12px 16px;background:#F8FAFC;border-radius:8px;border:1px solid #E2E8F0;display:flex;align-items:center;gap:12px;">
+                <input type="checkbox" name="permissions[]" value="{{ $ghostPerm }}" {{ ($ghostExists && $ghostChecked) ? 'checked' : '' }} id="perm_ghost" style="width:18px;height:18px;cursor:pointer;">
+                <label for="perm_ghost" style="cursor:pointer;font-size:0.875rem;font-weight:500;color:#1A202C;">
+                    Facturation Fantôme — Consultation
+                </label>
+                <span style="font-size:0.75rem;color:#64748B;margin-left:auto;">Permet de consulter les factures fantômes</span>
             </div>
 
             {{-- Approuver — only for Comptabilité — separate row --}}
