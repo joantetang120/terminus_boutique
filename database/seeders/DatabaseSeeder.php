@@ -16,8 +16,9 @@ class DatabaseSeeder extends Seeder
             // Facturation
             'facture.view',
             'facture.create',
-            'facture.edit',
             'facture.cancel',
+            'facture.print',
+            'facture.payment',
             // Stock
             'stock.view',
             'stock.create',

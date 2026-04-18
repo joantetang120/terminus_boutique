@@ -165,14 +165,73 @@
                         <p><strong>Note de sécurité :</strong> Les permissions et le rôle sont en <strong>lecture seule</strong>. Seul un administrateur peut modifier ces paramètres système.</p>
                     </div>
 
-                    <div class="permissions-grid">
-                        @foreach(Auth::user()->getAllPermissions() as $permission)
-                        <div class="permission-item">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                            {{ $permission->name }}
-                        </div>
+                    @php
+                        $permissionLabels = [
+                            // Facturation
+                            'facture.view' => 'Voir les factures',
+                            'facture.create' => 'Créer des factures',
+                            'facture.cancel' => 'Annuler des factures',
+                            'facture.print' => 'Imprimer des factures',
+                            'facture.payment' => 'Enregistrer des paiements',
+                            // Stock
+                            'stock.view' => 'Voir le stock',
+                            'stock.create' => 'Créer des entrées stock',
+                            'stock.edit' => 'Modifier le stock',
+                            'stock.cancel' => 'Annuler des mouvements',
+                            // Comptabilité
+                            'compta.view' => 'Voir la comptabilité',
+                            'compta.create' => 'Créer des écritures',
+                            'compta.edit' => 'Modifier des écritures',
+                            'compta.approve' => 'Approuver des écritures',
+                            // Ghost
+                            'ghost.view' => 'Facturation fantôme',
+                            // Utilisateurs
+                            'user.view' => 'Voir les utilisateurs',
+                            'user.create' => 'Créer des utilisateurs',
+                            'user.edit' => 'Modifier des utilisateurs',
+                            // Audit
+                            'audit.view' => "Journal d'audit",
+                            // Produits
+                            'product.view' => 'Voir les produits',
+                            'product.create' => 'Créer des produits',
+                            'product.edit' => 'Modifier des produits',
+                        ];
+
+                        $moduleGroups = [
+                            'Facturation' => ['facture.view', 'facture.create', 'facture.cancel', 'facture.print', 'facture.payment'],
+                            'Stock' => ['stock.view', 'stock.create', 'stock.edit', 'stock.cancel'],
+                            'Comptabilité' => ['compta.view', 'compta.create', 'compta.edit', 'compta.approve'],
+                            'Facturation Fantôme' => ['ghost.view'],
+                            'Utilisateurs' => ['user.view', 'user.create', 'user.edit'],
+                            "Journal d'Audit" => ['audit.view'],
+                            'Produits' => ['product.view', 'product.create', 'product.edit'],
+                        ];
+
+                        $userPerms = Auth::user()->getAllPermissions()->pluck('name')->toArray();
+                    @endphp
+
+                    <div class="permissions-modules">
+                        @foreach($moduleGroups as $moduleName => $modulePerms)
+                            @php
+                                $hasPermsInModule = array_intersect($modulePerms, $userPerms);
+                            @endphp
+                            @if(!empty($hasPermsInModule))
+                            <div class="permission-module">
+                                <div class="module-header">{{ $moduleName }}</div>
+                                <div class="module-perms">
+                                    @foreach($modulePerms as $permName)
+                                        @if(in_array($permName, $userPerms))
+                                        <div class="permission-item">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                            {{ $permissionLabels[$permName] ?? $permName }}
+                                        </div>
+                                        @endif
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endif
                         @endforeach
                     </div>
                 </div>
@@ -459,10 +518,39 @@
             gap: 8px;
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            padding: 10px 15px;
-            border-radius: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
             font-size: 0.85rem;
             color: #334155;
+        }
+
+        .permissions-modules {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .permission-module {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .module-header {
+            background: #f1f5f9;
+            padding: 10px 15px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #1e293b;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .module-perms {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 12px 15px;
+            background: #fff;
         }
 
         @media (max-width: 768px) {
