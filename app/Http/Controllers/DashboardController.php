@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\AccountingEntry;
+use App\Services\DueDateAlertService;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     public function index()
     {
+        // Mark overdue invoices on dashboard load
+        DueDateAlertService::markOverdue();
+
         $today = today();
 
         $invoicesToday = Invoice::whereDate('created_at', $today)->count();

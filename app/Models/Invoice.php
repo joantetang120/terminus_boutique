@@ -127,4 +127,28 @@ class Invoice extends Model
             $this->status = 'IMPAYEE';
         }
     }
+
+    public function getStatusBadgeClass(): string
+    {
+        return match($this->status) {
+            'SOLDEE' => 'badge-success',
+            'PARTIELLE' => 'badge-warning',
+            'IMPAYEE' => 'badge-info',
+            'EN_RETARD' => 'badge-danger',
+            'ANNULEE' => 'badge-danger',
+            default => 'badge-secondary',
+        };
+    }
+
+    public function getStatusLabel(): string
+    {
+        return match($this->status) {
+            'SOLDEE' => 'Soldée',
+            'PARTIELLE' => 'Partielle',
+            'IMPAYEE' => 'Impayée',
+            'EN_RETARD' => 'En retard',
+            'ANNULEE' => 'Annulée',
+            default => $this->status,
+        };
+    }
 }
