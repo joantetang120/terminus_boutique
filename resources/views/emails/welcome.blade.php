@@ -33,7 +33,7 @@
                 @if($createdByName)
                 <p><strong>Créé par :</strong> {{ $createdByName }}</p>
                 @endif
-                <p><strong>Email :</strong> {{ $userName }}</p>
+                <p><strong>Nom d'utilisateur :</strong> {{ $userName }}</p>
             </div>
 
             <p>Vous pouvez dès à présent vous connecter à votre espace pour gérer vos activités.</p>

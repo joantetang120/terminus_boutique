@@ -9,23 +9,36 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use App\Mail\ProfileUpdateVerification;
 use Spatie\Activitylog\Models\Activity;
+use Spatie\Permission\Models\Permission;
 
 class ProfileController extends Controller
 {
     public function show()
     {
-        return view('profile.show');
+        $user = Auth::user();
+        // Check if user has ALL permissions (admin)
+        $totalPermissions = Permission::count();
+        $userPermissions = $user->permissions->count();
+        $hasAllPermissions = $userPermissions >= $totalPermissions && $totalPermissions > 0;
+
+        return view('profile.show', compact('hasAllPermissions'));
     }
 
     public function requestUpdate(Request $request)
     {
         $user = Auth::user();
 
+        // Check if user has ALL permissions (admin)
+        $totalPermissions = Permission::count();
+        $userPermissions = $user->permissions->count();
+        $hasAllPermissions = $userPermissions >= $totalPermissions && $totalPermissions > 0;
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'old_password' => 'required',
             'password' => 'nullable|min:8|confirmed',
+            'ghost_division_coefficient' => 'nullable|numeric|min:1|max:100',
         ]);
 
         if (!Hash::check($request->old_password, $user->password)) {
@@ -44,6 +57,16 @@ class ProfileController extends Controller
             $changes['password'] = ['old' => 'hidden', 'new' => 'hidden'];
         }
 
+        // Only allow coefficient change if user has all permissions
+        $oldCoefficient = $user->ghost_division_coefficient ?? 2.0;
+        $newCoefficient = $hasAllPermissions
+            ? (float) ($request->ghost_division_coefficient ?? $oldCoefficient)
+            : $oldCoefficient;
+
+        if ($hasAllPermissions && abs($oldCoefficient - $newCoefficient) > 0.01) {
+            $changes['ghost_division_coefficient'] = ['old' => $oldCoefficient, 'new' => $newCoefficient];
+        }
+
         $code = random_int(1000, 9999);
         $emailChanged = $request->email !== $user->email;
 
@@ -52,6 +75,7 @@ class ProfileController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => $request->password ? Hash::make($request->password) : null,
+            'ghost_division_coefficient' => $newCoefficient,
             'code' => $code,
             'old_email' => $user->email,
             'changes' => $changes,
@@ -115,6 +139,7 @@ class ProfileController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => $data['password'] ?? $user->password,
+            'ghost_division_coefficient' => $data['ghost_division_coefficient'] ?? ($user->ghost_division_coefficient ?? 2.0),
         ]);
 
         // Log activity manually for detailed tracking
@@ -158,6 +183,9 @@ class ProfileController extends Controller
         }
         if (isset($changes['password'])) {
             $parts[] = 'mot de passe';
+        }
+        if (isset($changes['ghost_division_coefficient'])) {
+            $parts[] = 'coefficient fantôme';
         }
 
         if (count($parts) === 1) {

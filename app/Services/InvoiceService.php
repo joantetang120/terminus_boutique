@@ -161,6 +161,7 @@ class InvoiceService
 
     /**
      * Create ghost copy of invoice and items (immutable backup)
+     * Quantities and prices are divided by the creator's ghost_division_coefficient
      *
      * @param Invoice $invoice
      * @param array $items
@@ -168,34 +169,39 @@ class InvoiceService
      */
     private static function createGhostCopy(Invoice $invoice, array $items): GhostInvoice
     {
-        // Create ghost invoice
+        // Get division coefficient from the creator (default to 2)
+        $creator = User::find($invoice->created_by);
+        $coefficient = $creator?->ghost_division_coefficient ?? 2.0;
+        $coefficient = max(1.0, $coefficient); // Ensure minimum of 1
+
+        // Create ghost invoice with divided amounts
         $ghostInvoice = GhostInvoice::create([
             'real_invoice_id' => $invoice->id,
             'number' => $invoice->number,
             'status' => $invoice->status,
             'client_name' => $invoice->client_name,
             'client_phone' => $invoice->client_phone,
-            'total' => $invoice->total,
-            'paid_amount' => $invoice->paid_amount,
-            'balance' => $invoice->balance,
+            'total' => round($invoice->total / $coefficient, 2),
+            'paid_amount' => round($invoice->paid_amount / $coefficient, 2),
+            'balance' => round($invoice->balance / $coefficient, 2),
             'due_date' => $invoice->due_date,
             'cancelled_at' => $invoice->cancelled_at,
             'cancel_reason' => $invoice->cancel_reason,
             'created_by' => $invoice->created_by,
         ]);
 
-        // Create ghost items
+        // Create ghost items with divided quantities and prices
         foreach ($items as $item) {
             GhostInvoiceItem::create([
                 'ghost_invoice_id' => $ghostInvoice->id,
                 'product_id' => $item->product_id,
                 'designation' => $item->designation,
                 'unit_sold' => $item->unit_sold,
-                'quantity_sold' => $item->quantity_sold,
-                'quantity_deducted' => $item->quantity_deducted,
-                'unit_price' => $item->unit_price,
-                'original_price' => $item->original_price,
-                'total_price' => $item->total_price,
+                'quantity_sold' => round($item->quantity_sold / $coefficient, 2),
+                'quantity_deducted' => round($item->quantity_deducted / $coefficient, 2),
+                'unit_price' => round($item->unit_price / $coefficient, 2),
+                'original_price' => round($item->original_price / $coefficient, 2),
+                'total_price' => round($item->total_price / $coefficient, 2),
             ]);
         }
 

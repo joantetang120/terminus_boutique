@@ -11,7 +11,7 @@
             </div>
             <div style="display: flex; align-items: center; gap: 16px;">
                 <span style="font-size: 12px; opacity: 0.8;">
-                    Accès vérifié: {{ session('ghost_access_verified_at')?->format('d/m/Y H:i') ?? 'N/A' }}
+                    Accès vérifié: {{ session('ghost_access_verified_at') ? \Carbon\Carbon::parse(session('ghost_access_verified_at'))->format('d/m/Y H:i') : 'N/A' }}
                 </span>
                 <form method="POST" action="{{ route('ghost.logout') }}" style="display: inline;">
                     @csrf

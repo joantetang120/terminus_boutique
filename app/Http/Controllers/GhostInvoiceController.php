@@ -11,11 +11,6 @@ use Illuminate\Support\Facades\Session;
 
 class GhostInvoiceController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('can:ghost.view');
-    }
-
     /**
      * Show password form for ghost invoices access
      */
@@ -41,7 +36,10 @@ class GhostInvoiceController extends Controller
                 ->with('error', 'Aucun mot de passe configuré. Contactez l\'administrateur.');
         }
 
-        if (!Hash::check($request->password, $storedPassword)) {
+        // Trim password to handle accidental whitespace
+        $inputPassword = trim($request->password);
+
+        if (!Hash::check($inputPassword, $storedPassword)) {
             return redirect()
                 ->back()
                 ->with('error', 'Mot de passe incorrect.');
