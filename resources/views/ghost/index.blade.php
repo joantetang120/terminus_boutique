@@ -1,7 +1,7 @@
 <x-app-layout title="Factures Fantômes - Archive">
     {{-- Bandeau distinctif Ghost Invoices --}}
     <div style="background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%); color: white; padding: 12px 24px; border-bottom: 3px solid #ed8936;">
-        <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
+        <div style="max-width: 100%; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 0 24px;">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                 <div>
@@ -11,7 +11,7 @@
             </div>
             <div style="display: flex; align-items: center; gap: 16px;">
                 <span style="font-size: 12px; opacity: 0.8;">
-                    Accès vérifié: {{ session('ghost_access_verified_at')?->format('d/m/Y H:i') ?? 'N/A' }}
+                    Accès vérifié: {{ session('ghost_access_verified_at') ? \Carbon\Carbon::parse(session('ghost_access_verified_at'))->format('d/m/Y H:i') : 'N/A' }}
                 </span>
                 <form method="POST" action="{{ route('ghost.logout') }}" style="display: inline;">
                     @csrf
@@ -25,7 +25,7 @@
 
     {{-- Fond légèrement teinté pour distinction --}}
     <div style="background: #f7fafc; min-height: calc(100vh - 200px); padding: 24px 0;">
-        <div class="page-header" style="max-width: 1200px; margin: 0 auto 24px; padding: 0 24px;">
+        <div class="page-header" style="max-width: 100%; margin: 0 auto 24px; padding: 0 24px;">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
                 <h1 style="margin: 0; color: #4a5568;">Factures Fantômes</h1>
                 <span style="background: #ed8936; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase;">Archive</span>
@@ -37,7 +37,7 @@
             </div>
         </div>
 
-        <div class="table-wrapper" style="max-width: 1200px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;">
+        <div class="table-wrapper" style="max-width: 100%; margin: 0 24px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;">
             {{-- Filtres --}}
             <form method="GET" class="table-toolbar" style="padding: 16px; background: #edf2f7; border-bottom: 1px solid #e2e8f0; border-radius: 8px 8px 0 0;">
                 <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">

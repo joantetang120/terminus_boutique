@@ -20,6 +20,7 @@ class User extends Authenticatable
         'password',
         'is_active',
         'created_by',
+        'ghost_division_coefficient',
     ];
 
     protected $hidden = [
@@ -33,6 +34,7 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'ghost_division_coefficient' => 'decimal:2',
         ];
     }
 

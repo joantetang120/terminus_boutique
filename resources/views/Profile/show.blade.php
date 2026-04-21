@@ -114,6 +114,34 @@
                         </div>
                     </div>
 
+                    @if($hasAllPermissions)
+                    <div class="form-divider"></div>
+
+                    {{-- Ghost Invoices Coefficient Setting - Only for admins with all permissions --}}
+                    <div class="form-section" style="background: #fef3c7; padding: 16px; border-radius: 8px; border: 1px solid #fbbf24;">
+                        <h3 class="section-title" style="color: #92400e;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10 9 9 9 8 9"></polyline>
+                            </svg>
+                            Paramètres Archive Fantôme (Admin)
+                        </h3>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" style="color: #78350f;">Coefficient de division</label>
+                            <input type="number" name="ghost_division_coefficient" value="{{ old('ghost_division_coefficient', Auth::user()->ghost_division_coefficient ?? 2) }}"
+                                   min="1" step="0.1" required class="form-input" style="width: 120px; border-color: #fbbf24;">
+                            <span class="input-hint" style="color: #78350f;">
+                                <strong>Paramètre administrateur :</strong> Divise les quantités et prix par ce coefficient lors de la création des factures fantômes.
+                                <br>Ex: 2 = quantités et prix divisés par 2 (moitié des valeurs réelles).
+                            </span>
+                        </div>
+                    </div>
+                    @endif
+
                     <div class="security-box">
                         <label class="security-label">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
