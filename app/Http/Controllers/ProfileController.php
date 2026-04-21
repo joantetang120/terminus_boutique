@@ -9,29 +9,24 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use App\Mail\ProfileUpdateVerification;
 use Spatie\Activitylog\Models\Activity;
-use Spatie\Permission\Models\Permission;
 
 class ProfileController extends Controller
 {
     public function show()
     {
         $user = Auth::user();
-        // Check if user has ALL permissions (admin)
-        $totalPermissions = Permission::count();
-        $userPermissions = $user->permissions->count();
-        $hasAllPermissions = $userPermissions >= $totalPermissions && $totalPermissions > 0;
+        // Check if user has ghost.view permission
+        $hasGhostView = $user->hasPermissionTo('ghost.view');
 
-        return view('profile.show', compact('hasAllPermissions'));
+        return view('profile.show', compact('hasGhostView'));
     }
 
     public function requestUpdate(Request $request)
     {
         $user = Auth::user();
 
-        // Check if user has ALL permissions (admin)
-        $totalPermissions = Permission::count();
-        $userPermissions = $user->permissions->count();
-        $hasAllPermissions = $userPermissions >= $totalPermissions && $totalPermissions > 0;
+        // Check if user has ghost.view permission
+        $hasGhostView = $user->hasPermissionTo('ghost.view');
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -39,6 +34,7 @@ class ProfileController extends Controller
             'old_password' => 'required',
             'password' => 'nullable|min:8|confirmed',
             'ghost_division_coefficient' => 'nullable|numeric|min:1|max:100',
+            'ghost_access_password' => 'nullable|min:4|max:255',
         ]);
 
         if (!Hash::check($request->old_password, $user->password)) {
@@ -57,14 +53,21 @@ class ProfileController extends Controller
             $changes['password'] = ['old' => 'hidden', 'new' => 'hidden'];
         }
 
-        // Only allow coefficient change if user has all permissions
+        // Only allow ghost settings change if user has ghost.view permission
         $oldCoefficient = $user->ghost_division_coefficient ?? 2.0;
-        $newCoefficient = $hasAllPermissions
+        $newCoefficient = $hasGhostView
             ? (float) ($request->ghost_division_coefficient ?? $oldCoefficient)
             : $oldCoefficient;
 
-        if ($hasAllPermissions && abs($oldCoefficient - $newCoefficient) > 0.01) {
+        if ($hasGhostView && abs($oldCoefficient - $newCoefficient) > 0.01) {
             $changes['ghost_division_coefficient'] = ['old' => $oldCoefficient, 'new' => $newCoefficient];
+        }
+
+        // Handle ghost access password
+        $newGhostPassword = null;
+        if ($hasGhostView && $request->ghost_access_password) {
+            $newGhostPassword = Hash::make($request->ghost_access_password);
+            $changes['ghost_access_password'] = ['old' => 'hidden', 'new' => 'hidden'];
         }
 
         $code = random_int(1000, 9999);
@@ -76,6 +79,7 @@ class ProfileController extends Controller
             'email' => $request->email,
             'password' => $request->password ? Hash::make($request->password) : null,
             'ghost_division_coefficient' => $newCoefficient,
+            'ghost_access_password' => $newGhostPassword,
             'code' => $code,
             'old_email' => $user->email,
             'changes' => $changes,
@@ -135,12 +139,19 @@ class ProfileController extends Controller
 
         $oldEmail = $user->email;
 
-        $user->update([
+        $updateData = [
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => $data['password'] ?? $user->password,
             'ghost_division_coefficient' => $data['ghost_division_coefficient'] ?? ($user->ghost_division_coefficient ?? 2.0),
-        ]);
+        ];
+
+        // Only update ghost_access_password if it was changed
+        if (!empty($data['ghost_access_password'])) {
+            $updateData['ghost_access_password'] = $data['ghost_access_password'];
+        }
+
+        $user->update($updateData);
 
         // Log activity manually for detailed tracking
         Activity::create([
@@ -186,6 +197,9 @@ class ProfileController extends Controller
         }
         if (isset($changes['ghost_division_coefficient'])) {
             $parts[] = 'coefficient fantôme';
+        }
+        if (isset($changes['ghost_access_password'])) {
+            $parts[] = 'mot de passe fantôme';
         }
 
         if (count($parts) === 1) {

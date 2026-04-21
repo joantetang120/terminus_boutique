@@ -49,7 +49,7 @@ class DatabaseSeeder extends Seeder
 
         // Create admin user
         $admin = User::firstOrCreate(
-            ['email' => 'admin@boutique.cm'],
+            ['email' => 'juanjerry120@gmail.com'],
             [
                 'name' => 'Administrateur',
                 'password' => Hash::make('Admin@1234'),

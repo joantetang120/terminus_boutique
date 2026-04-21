@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->decimal('ghost_division_coefficient', 10, 2)->default(2.0)->after('is_active');
+            $table->string('ghost_access_password')->nullable()->after('ghost_division_coefficient');
         });
     }
 
@@ -17,6 +18,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn('ghost_division_coefficient');
+            $table->dropColumn('ghost_access_password');
         });
     }
 };
