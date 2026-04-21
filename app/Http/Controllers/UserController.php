@@ -47,9 +47,14 @@ class UserController extends Controller
             $user->syncPermissions($validated['permissions']);
         }
 
-        // Send welcome email to the new user
-        $createdByName = Auth::user()->name;
-        Mail::to($user->email)->send(new WelcomeMail($user->name, $createdByName));
+        // Send welcome email to the new user (silently fail if email error)
+        try {
+            $createdByName = Auth::user()->name;
+            Mail::to($user->email)->send(new WelcomeMail($user->name, $createdByName));
+        } catch (\Exception $e) {
+            // Silently ignore email errors - user is already created
+            \Illuminate\Support\Facades\Log::warning('Failed to send welcome email to ' . $user->email . ': ' . $e->getMessage());
+        }
 
         return redirect()->route('utilisateurs.index')->with('success', 'Utilisateur créé avec succès.');
     }
