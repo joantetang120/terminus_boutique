@@ -30,8 +30,12 @@ Route::middleware(['auth'])->group(function () {
 
     // Factures
     Route::resource('factures', \App\Http\Controllers\FactureController::class);
-    Route::post('factures/{facture}/annuler', [\App\Http\Controllers\FactureController::class, 'annuler'])
-        ->name('factures.annuler')->middleware('can:facture.cancel');
+    Route::post('factures/{facture}/cancel', [\App\Http\Controllers\FactureController::class, 'cancel'])
+        ->name('factures.cancel')->middleware('can:facture.cancel');
+    Route::get('factures/{facture}/print', [\App\Http\Controllers\FactureController::class, 'print'])
+        ->name('factures.print')->middleware('can:facture.print');
+    Route::get('factures/{facture}/preview', [\App\Http\Controllers\FactureController::class, 'preview'])
+        ->name('factures.preview')->middleware('can:facture.print');
 
     // Stock - Groupe préfixé avec middleware can
     Route::prefix('stock')->middleware('can:stock.view')->group(function () {
@@ -61,9 +65,24 @@ Route::middleware(['auth'])->group(function () {
             ->name('produits.destroy')->middleware('can:product.edit');
     });
 
-    // Ghost
-    Route::get('ghost', [\App\Http\Controllers\GhostController::class, 'index'])
-        ->name('ghost.index')->middleware('can:ghost.view');
+    // Ghost Invoices - Password protected access
+    Route::prefix('ghost-invoices')->middleware('can:ghost.view')->group(function () {
+        // Password verification routes (no ghost.session required)
+        Route::get('/access', [\App\Http\Controllers\GhostInvoiceController::class, 'passwordForm'])
+            ->name('ghost.password');
+        Route::post('/access', [\App\Http\Controllers\GhostInvoiceController::class, 'verifyPassword'])
+            ->name('ghost.verify');
+        Route::post('/logout', [\App\Http\Controllers\GhostInvoiceController::class, 'logout'])
+            ->name('ghost.logout');
+
+        // Protected routes (require ghost.session)
+        Route::middleware([\App\Http\Middleware\GhostAccessMiddleware::class])->group(function () {
+            Route::get('/', [\App\Http\Controllers\GhostInvoiceController::class, 'index'])
+                ->name('ghost.index');
+            Route::get('/{ghostInvoice}', [\App\Http\Controllers\GhostInvoiceController::class, 'show'])
+                ->name('ghost.show');
+        });
+    });
 
     // Comptabilité
     Route::get('comptabilite', [\App\Http\Controllers\ComptaController::class, 'index'])->name('comptabilite.index');

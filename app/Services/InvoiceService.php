@@ -96,16 +96,36 @@ class InvoiceService
      */
     private static function createInvoiceItem(Invoice $invoice, array $itemData, User $user): InvoiceItem
     {
-        $product = Product::find($itemData['product_id']);
+        $product = Product::with('unitConversions')->find($itemData['product_id']);
 
         // Calculate quantity deducted from stock
         $quantitySold = $itemData['quantity_sold'];
         $unitSold = $itemData['unit_sold'];
         $quantityDeducted = $quantitySold;
 
-        // (4) Calculate quantity_deducted: if unit_sold == unit_purchase → qty × conversion_rate
-        if ($product && $unitSold === $product->unit_purchase && !empty($itemData['conversion_rate'])) {
-            $quantityDeducted = $quantitySold * $itemData['conversion_rate'];
+        // (4) Calculate quantity_deducted based on unit sold
+        if ($product && $unitSold) {
+            // If selling in base unit, no conversion needed
+            if ($unitSold === $product->unit) {
+                $quantityDeducted = $quantitySold;
+            }
+            // If selling in purchase unit, apply conversion rate
+            elseif ($unitSold === $product->purchase_unit && !empty($product->purchase_conversion_rate)) {
+                $quantityDeducted = $quantitySold * $product->purchase_conversion_rate;
+            }
+            // If selling in sale unit, apply conversion rate
+            elseif ($unitSold === $product->sale_unit && !empty($product->sale_conversion_rate)) {
+                $quantityDeducted = $quantitySold * $product->sale_conversion_rate;
+            }
+            // Check unit_conversions table for other units
+            else {
+                $conversion = $product->unitConversions()
+                    ->where('unit', $unitSold)
+                    ->first();
+                if ($conversion) {
+                    $quantityDeducted = $quantitySold * $conversion->conversion_rate;
+                }
+            }
         }
 
         // Create invoice item with snapshotted values
