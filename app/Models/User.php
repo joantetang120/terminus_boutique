@@ -21,11 +21,13 @@ class User extends Authenticatable
         'is_active',
         'created_by',
         'ghost_division_coefficient',
+        'ghost_access_password',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'ghost_access_password',
     ];
 
     protected function casts(): array

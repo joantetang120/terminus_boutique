@@ -28,7 +28,8 @@ class GhostInvoiceController extends Controller
             'password' => 'required|string',
         ]);
 
-        $storedPassword = config('app.ghost_access_password');
+        $user = Auth::user();
+        $storedPassword = $user->ghost_access_password;
 
         if (!$storedPassword) {
             return redirect()
@@ -45,18 +46,19 @@ class GhostInvoiceController extends Controller
                 ->with('error', 'Mot de passe incorrect.');
         }
 
-        // Mark session as verified
+        // Mark session as verified for this specific user
         Session::put('ghost_access_verified', true);
         Session::put('ghost_access_verified_at', now());
+        Session::put('ghost_access_user_id', $user->id);
 
         // Log the access
         activity('ghost.access')
-            ->causedBy(Auth::user())
+            ->causedBy($user)
             ->withProperties([
                 'action' => 'password_verified',
                 'ip' => $request->ip(),
             ])
-            ->log('Accès aux factures fantômes autorisé pour ' . Auth::user()->name);
+            ->log('Accès aux factures fantômes autorisé pour ' . $user->name);
 
         // Redirect to intended URL or index
         $intendedUrl = Session::pull('ghost_intended_url', route('ghost.index'));
