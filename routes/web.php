@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\FactureController;
 
 // Auth
 Route::get('/', [AuthController::class, 'showLogin'])->name('login');
@@ -29,14 +30,19 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Factures
-    Route::resource('factures', \App\Http\Controllers\FactureController::class);
-    Route::post('factures/{facture}/cancel', [\App\Http\Controllers\FactureController::class, 'cancel'])
-        ->name('factures.cancel')->middleware('can:facture.cancel');
-    Route::get('factures/{facture}/print', [\App\Http\Controllers\FactureController::class, 'print'])
-        ->name('factures.print')->middleware('can:facture.print');
-    Route::get('factures/{facture}/preview', [\App\Http\Controllers\FactureController::class, 'preview'])
-        ->name('factures.preview')->middleware('can:facture.print');
+    Route::resource('factures', \App\Http\Controllers\FactureController::class)
+    ->parameters(['factures' => 'invoice']);
+    Route::get('/factures/{invoice}/print', [FactureController::class, 'print'])->name('factures.print');
 
+Route::patch('/factures/{invoice}/request-cancellation', [FactureController::class, 'requestCancellation'])
+    ->name('factures.request-cancellation');
+
+Route::patch('/factures/{invoice}/confirm-cancellation', [FactureController::class, 'confirmCancellation'])
+    ->name('factures.confirm-cancellation');
+    
+        
+    
+   
     // Stock - Groupe préfixé avec middleware can
     Route::prefix('stock')->middleware('can:stock.view')->group(function () {
         Route::get('history', [\App\Http\Controllers\StockController::class, 'index'])->name('stock.index');
@@ -112,6 +118,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile/verify', [ProfileController::class, 'verifyForm'])->name('profile.verify_form');
 
 Route::post('/profile/confirm-update', [ProfileController::class, 'confirmUpdate'])->name('profile.confirm_update');
+
+
     
 });
 

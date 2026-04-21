@@ -1,3 +1,7 @@
+@php 
+    // On force la définition pour éviter l'erreur de paramètre manquant
+    $facture = $invoice ?? $facture; 
+@endphp
 <x-app-layout title="Facture {{ $facture->number }}">
     <div class="page-header">
         <div class="page-header-actions">
@@ -8,16 +12,14 @@
                 </div>
             </div>
             <div style="display:flex;gap:8px;">
-                @can('facture.cancel')
-                    @if(!$facture->isCancelled())
-                    <button class="btn btn-danger btn-sm"
-                            x-data
-                            @click="$dispatch('open-cancel-modal', { id: {{ $facture->id }}, number: '{{ $facture->number }}' })">
-                        Annuler
-                    </button>
-                    @endif
-                @endcan
-            </div>
+    {{-- Ajoute ce bouton ICI --}}
+   <a href="{{ route('factures.print', $invoice->id) }}" class="btn btn-primary" target="_blank">
+    Imprimer la facture
+</a>
+    @can('facture.cancel')
+        {{-- Ton bouton Annuler actuel --}}
+    @endcan
+</div>
         </div>
     </div>
 

@@ -5,6 +5,12 @@
             <a href="{{ route('dashboard') }}">Accueil</a> > Tableau de bord
         </div>
     </div>
+    {{-- Nouveau widget de résumé de facturation --}}
+    @can('facture.view')
+        <div style="margin-bottom: 24px;">
+            <x-dashboard-invoice-summary :stats="$invoiceStats" />
+        </div>
+    @endcan
 
     {{-- Stats Row --}}
     <div class="stats-grid">

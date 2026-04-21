@@ -13,13 +13,19 @@ use Illuminate\Support\Facades\Auth;
 class FactureController extends Controller
 {
     /**
-     * Display a paginated list of invoices with filters
+     * Liste des factures avec filtres et recherche
      */
     public function index(Request $request)
     {
         $query = Invoice::with(['createdBy', 'cancelledBy']);
 
-        // Filter by search (number or client name)
+        // Filtre Admin : Voir uniquement les demandes d'annulation
+        if ($request->has('filter_cancellation')) {
+            $query->where('cancellation_requested', true)
+                  ->where('status', '!=', 'annulee');
+        }
+
+        // Recherche par numéro ou nom client
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -28,12 +34,12 @@ class FactureController extends Controller
             });
         }
 
-        // Filter by status
+        // Filtre par statut
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        // Filter by date range
+        // Filtre par plage de dates
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
         }
@@ -41,14 +47,14 @@ class FactureController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        // Filter by client
+        // Filtre par client exact ou partiel
         if ($request->filled('client')) {
             $query->where('client_name', 'like', '%' . $request->client . '%');
         }
 
         $invoices = $query->latest()->paginate(20);
 
-        // Summary: unpaid invoices count and total balance
+        // Calculs pour le résumé (stats en haut de page)
         $unpaidCount = Invoice::whereIn('status', ['IMPAYEE', 'PARTIELLE', 'EN_RETARD'])->count();
         $unpaidTotal = Invoice::whereIn('status', ['IMPAYEE', 'PARTIELLE', 'EN_RETARD'])->sum('balance');
 
@@ -56,7 +62,7 @@ class FactureController extends Controller
     }
 
     /**
-     * Show the form for creating a new invoice
+     * Formulaire de création
      */
     public function create()
     {
@@ -68,11 +74,12 @@ class FactureController extends Controller
                 $product->available_units = $product->getAvailableUnits();
                 return $product;
             });
+            
         return view('factures.create', compact('products'));
     }
 
     /**
-     * Store a newly created invoice using InvoiceService
+     * Enregistrement d'une nouvelle facture
      */
     public function store(InvoiceRequest $request)
     {
@@ -93,75 +100,78 @@ class FactureController extends Controller
     }
 
     /**
-     * Display the specified invoice with items and payment summary
+     * Détails d'une facture
      */
-    public function show(Invoice $facture)
+    public function show(Invoice $invoice)
     {
-        $facture->load(['items.product', 'createdBy', 'cancelledBy', 'payments']);
+        $invoice->load(['items.product', 'createdBy', 'cancelledBy', 'payments']);
 
-        // Calculate payment summary
         $paymentSummary = [
-            'total_payments' => $facture->payments->sum('amount'),
-            'payment_count' => $facture->payments->count(),
-            'last_payment' => $facture->payments->sortByDesc('payment_date')->first(),
+            'total_payments' => $invoice->payments->sum('amount'),
+            'payment_count' => $invoice->payments->count(),
+            'last_payment' => $invoice->payments->sortByDesc('payment_date')->first(),
         ];
 
-        return view('factures.show', compact('facture', 'paymentSummary'));
+        return view('factures.show', compact('invoice', 'paymentSummary'));
     }
 
     /**
-     * Cancel an invoice using InvoiceService (requires facture.cancel permission)
+     * VENDEUR : Demander l'annulation à l'admin
      */
-    public function cancel(Request $request, Invoice $facture)
+    public function requestCancellation(Invoice $invoice)
     {
-        $this->authorize('facture.cancel');
-
-        $validated = $request->validate([
-            'cancel_reason' => 'required|string|min:10|max:500',
-        ]);
-
-        try {
-            InvoiceService::cancel($facture, $validated['cancel_reason'], Auth::user());
-
-            return redirect()
-                ->route('factures.index')
-                ->with('success', 'Facture ' . $facture->number . ' annulée avec succès.');
-        } catch (\Exception $e) {
-            return redirect()
-                ->back()
-                ->with('error', 'Erreur lors de l\'annulation: ' . $e->getMessage());
+        if ($invoice->status === 'ANNULEE' || $invoice->status === 'annulee') {
+            return back()->with('error', 'Cette facture est déjà annulée.');
         }
+
+        $invoice->update(['cancellation_requested' => true]);
+
+        return back()->with('success', 'La demande d\'annulation a été envoyée à l\'administrateur.');
     }
 
     /**
-     * Generate and download PDF of the invoice (requires facture.print permission)
+     * ADMIN : Confirmer l'annulation et remettre les stocks à jour
      */
-    public function print(Invoice $facture)
+    public function confirmCancellation(Invoice $invoice)
     {
-        $this->authorize('facture.print');
-
-        try {
-            return InvoicePdfService::download($facture);
-        } catch (\Exception $e) {
-            return redirect()
-                ->back()
-                ->with('error', 'Erreur lors de la génération du PDF: ' . $e->getMessage());
+        if (!Auth::user()->can('facture.admin')) {
+            abort(403, 'Action non autorisée.');
         }
+         try {
+        InvoiceService::cancel($invoice, 'Annulation validée par l\'administrateur', Auth::user());
+        $invoice->update(['cancellation_requested' => false]);
+
+        return redirect()->route('factures.index')
+            ->with('success', 'L\'annulation de la facture ' . $invoice->number . ' a été validée.');
+    } catch (\Exception $e) {
+        return back()->with('error', 'Erreur lors de la validation : ' . $e->getMessage());
+    }
     }
 
     /**
-     * Preview PDF of the invoice in browser (requires facture.print permission)
+     * Impression PDF
      */
-    public function preview(Invoice $facture)
+    public function print(Invoice $invoice)
     {
-        $this->authorize('facture.print');
-
         try {
-            return InvoicePdfService::stream($facture);
-        } catch (\Exception $e) {
-            return redirect()
-                ->back()
-                ->with('error', 'Erreur lors de la génération du PDF: ' . $e->getMessage());
+            $invoice->load(['items.product', 'payments', 'createdBy']);
+            $data = ['facture' => $invoice, 'company' => ['name' => 'TERMINUS BOUTIQUE']];
+            $html = view('factures.facture_pdf', $data)->render();
+            
+            $dompdf = new \Dompdf\Dompdf();
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A5', 'portrait');
+            set_time_limit(120); 
+            $dompdf->render();
+
+            if (ob_get_level() > 0) ob_end_clean();
+            return response($dompdf->output())->header('Content-Type', 'application/pdf');
+
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Erreur PDF',
+                'erreur' => $e->getMessage()
+            ]);
         }
     }
 }

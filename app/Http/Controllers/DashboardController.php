@@ -53,6 +53,20 @@ class DashboardController extends Controller
             ->latest()
             ->get();
 
+        // --- AJOUT POUR LE WIDGET RÉSUMÉ FACTURATION ---
+        $invoiceStats = [
+            'today_count'    => $invoicesToday,
+            'today_total'    => $todayRevenue,
+            'unpaid_count'   => $unpaidInvoices->count(),
+            'unpaid_balance' => $unpaidInvoices->sum('balance'),
+            'overdue_count'  => Invoice::where('status', 'en_retard')->count(),
+            'alert_count'    => Invoice::whereIn('status', ['credit', 'avance'])
+                                ->where('balance', '>', 0)
+                                ->whereBetween('due_date', [$today, $today->copy()->addDays(3)])
+                                ->count(),
+        ];
+        // -----------------------------------------------
+
         return view('dashboard.index', compact(
             'invoicesToday',
             'invoiceTrend',
@@ -62,7 +76,8 @@ class DashboardController extends Controller
             'todayRevenue',
             'todayExpenses',
             'recentInvoices',
-            'unpaidInvoices'
+            'unpaidInvoices',
+            'invoiceStats' // Ajout de la variable ici
         ));
     }
 }

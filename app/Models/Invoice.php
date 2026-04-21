@@ -26,6 +26,7 @@ class Invoice extends Model
         'cancelled_by',
         'cancelled_at',
         'cancel_reason',
+        'cancellation_requested',
     ];
 
     protected function casts(): array
