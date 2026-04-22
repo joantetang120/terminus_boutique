@@ -16,6 +16,9 @@ class Invoice extends Model
     protected $fillable = [
         'number',
         'status',
+        'marked_for_cancellation',
+        'marked_by',
+        'marked_at',
         'client_name',
         'client_phone',
         'total',
@@ -36,6 +39,8 @@ class Invoice extends Model
             'balance' => 'decimal:2',
             'due_date' => 'date',
             'cancelled_at' => 'datetime',
+            'marked_for_cancellation' => 'boolean',
+            'marked_at' => 'datetime',
         ];
     }
 
@@ -87,6 +92,11 @@ class Invoice extends Model
         return $this->belongsTo(User::class, 'cancelled_by');
     }
 
+    public function markedBy()
+    {
+        return $this->belongsTo(User::class, 'marked_by');
+    }
+
     public function payments()
     {
         return $this->hasMany(InvoicePayment::class);
@@ -115,6 +125,11 @@ class Invoice extends Model
     public function isPartial(): bool
     {
         return $this->status === 'PARTIELLE';
+    }
+
+    public function isMarkedForCancellation(): bool
+    {
+        return $this->marked_for_cancellation === true;
     }
 
     public function updateStatusFromPayment(): void
