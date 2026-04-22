@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <title>Facture {{ $invoice->number }}</title>
     <style>
+        @page {
+            margin: 0;
+            padding: 0;
+        }
         * {
             margin: 0;
             padding: 0;
@@ -11,13 +15,13 @@
         }
         body {
             font-family: 'Courier New', monospace;
-            font-size: 10px;
-            line-height: 1.3;
+            font-size: 9px;
+            line-height: 1.2;
             color: #000;
-            width: 80mm;
-            max-width: 80mm;
-            margin: 0 auto;
-            padding: 5mm;
+            width: 72mm;
+            max-width: 72mm;
+            margin: 0;
+            padding: 3mm;
         }
         .receipt {
             width: 100%;
