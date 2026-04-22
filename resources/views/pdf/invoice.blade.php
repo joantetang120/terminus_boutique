@@ -271,7 +271,6 @@
 
         {{-- Footer --}}
         <div class="footer">
-            Échéance: {{ $invoice->due_date?->format('d/m/Y') ?? 'N/A' }}<br>
             <small>Document généré le {{ now()->format('d/m/Y H:i') }}</small>
         </div>
     </div>
