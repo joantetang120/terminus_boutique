@@ -8,6 +8,14 @@
                 </div>
             </div>
             <div style="display:flex;gap:8px;">
+                @can('facture.print')
+                <a href="{{ route('factures.preview', $facture) }}" class="btn btn-secondary btn-sm" target="_blank" title="Imprimer la facture">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:4px;">
+                        <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 18v5h12v-5M6 18h12"></path>
+                    </svg>
+                    Imprimer
+                </a>
+                @endcan
                 @can('facture.cancel')
                     @if(!$facture->isCancelled())
                     <button class="btn btn-danger btn-sm"
