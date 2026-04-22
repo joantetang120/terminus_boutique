@@ -19,7 +19,7 @@ return new class extends Migration
             $table->dropColumn('note');
 
             // Modifier le enum status
-            $table->enum('status', ['IMPAYEE', 'PARTIELLE', 'SOLDEE', 'ANNULEE'])
+            $table->enum('status', ['IMPAYEE', 'PARTIELLE', 'SOLDEE', 'ANNULEE', 'EN_RETARD'])
                 ->default('IMPAYEE')
                 ->change();
 

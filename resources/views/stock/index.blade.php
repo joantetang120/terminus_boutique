@@ -130,8 +130,11 @@
             </tbody>
         </table>
 
-        <div style="padding:16px;">
+        <div class="pagination-wrapper">
             {{ $movements->links() }}
+            <div class="pagination-info">
+                Affichage {{ $movements->firstItem() ?? 0 }} - {{ $movements->lastItem() ?? 0 }} sur {{ $movements->total() }} mouvements
+            </div>
         </div>
     </div>
 

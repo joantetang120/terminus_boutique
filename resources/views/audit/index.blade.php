@@ -54,6 +54,11 @@
                 @endforelse
             </tbody>
         </table>
-        <div style="padding:16px;">{{ $activities->links() }}</div>
+        <div class="pagination-wrapper">
+            {{ $activities->links() }}
+            <div class="pagination-info">
+                Affichage {{ $activities->firstItem() ?? 0 }} - {{ $activities->lastItem() ?? 0 }} sur {{ $activities->total() }} activités
+            </div>
+        </div>
     </div>
 </x-app-layout>
