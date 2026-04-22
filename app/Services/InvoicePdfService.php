@@ -41,7 +41,14 @@ class InvoicePdfService
             ])
             ->log('Impression PDF facture: ' . $invoice->number . ' (' . $invoice->client_name . ') - ' . number_format($invoice->total, 2) . ' FCFA');
 
-        return Pdf::loadView('pdf.invoice', $data);
+        $pdf = Pdf::loadView('pdf.invoice', $data);
+
+        // Set paper size for 80mm thermal receipt printer format
+        // Width: 80mm (226.77 points), Height: auto based on content
+        $pdf->setPaper([0, 0, 226.77, 600], 'portrait');
+        $pdf->setOptions(['defaultFont' => 'Courier']);
+
+        return $pdf;
     }
 
     /**
