@@ -62,107 +62,106 @@ class DatabaseSeeder extends Seeder
     /**
      * Create realistic products commonly found in a boutique
      */
-    private function createRealisticProducts(int $adminId): array
-    {
-        // sale_unit is enum: ['carton', 'boite', 'paquet', 'piece']
-        $productData = [
-            [
-                'name' => 'Eau Minérale 1.5L',
-                'unit' => 'carton',
-                'sale_unit' => 'piece',  // bouteille = piece
-                'sale_conversion_rate' => 12,
-                'current_stock' => 240,
-                'alert_threshold' => 24,
-            ],
-            [
-                'name' => 'Jus d\'orange 1L',
-                'unit' => 'carton',
-                'sale_unit' => 'piece',  // bouteille = piece
-                'sale_conversion_rate' => 12,
-                'current_stock' => 180,
-                'alert_threshold' => 18,
-            ],
-            [
-                'name' => 'Coca-Cola 33cl',
-                'unit' => 'carton',
-                'sale_unit' => 'piece',  // canette = piece
-                'sale_conversion_rate' => 24,
-                'current_stock' => 480,
-                'alert_threshold' => 48,
-            ],
-            [
-                'name' => 'Chips Nature 100g',
-                'unit' => 'carton',
-                'sale_unit' => 'paquet',  // sachet = paquet
-                'sale_conversion_rate' => 50,
-                'current_stock' => 350,
-                'alert_threshold' => 35,
-            ],
-            [
-                'name' => 'Biscuits Choco',
-                'unit' => 'carton',
-                'sale_unit' => 'paquet',
-                'sale_conversion_rate' => 24,
-                'current_stock' => 288,
-                'alert_threshold' => 24,
-            ],
-            [
-                'name' => 'Pain de mie 500g',
-                'unit' => 'carton',
-                'sale_unit' => 'paquet',
-                'sale_conversion_rate' => 20,
-                'current_stock' => 120,
-                'alert_threshold' => 12,
-            ],
-            [
-                'name' => 'Lait en poudre 400g',
-                'unit' => 'carton',
-                'sale_unit' => 'boite',
-                'sale_conversion_rate' => 12,
-                'current_stock' => 144,
-                'alert_threshold' => 12,
-            ],
-            [
-                'name' => 'Café soluble 200g',
-                'unit' => 'carton',
-                'sale_unit' => 'boite',  // pot = boite
-                'sale_conversion_rate' => 12,
-                'current_stock' => 96,
-                'alert_threshold' => 10,
-            ],
-            [
-                'name' => 'Sucre en morceaux',
-                'unit' => 'carton',
-                'sale_unit' => 'boite',
-                'sale_conversion_rate' => 10,
-                'current_stock' => 150,
-                'alert_threshold' => 15,
-            ],
-            [
-                'name' => 'Thé Lipton 25 sachets',
-                'unit' => 'carton',
-                'sale_unit' => 'boite',
-                'sale_conversion_rate' => 24,
-                'current_stock' => 192,
-                'alert_threshold' => 20,
-            ],
-        ];
+  private function createRealisticProducts(int $adminId): array
+{
+    $productData = [
+        [
+            'name' => 'Eau Minérale 1.5L',
+            'unit' => 'piece',
+            'sale_unit' => 'carton',
+            'sale_conversion_rate' => 12,
+            'current_stock' => 240,
+            'alert_threshold' => 24,
+        ],
+        [
+            'name' => 'Jus d\'orange 1L',
+            'unit' => 'piece',
+            'sale_unit' => 'carton',
+            'sale_conversion_rate' => 12,
+            'current_stock' => 180,
+            'alert_threshold' => 18,
+        ],
+        [
+            'name' => 'Coca-Cola 33cl',
+            'unit' => 'piece',
+            'sale_unit' => 'carton',
+            'sale_conversion_rate' => 24,
+            'current_stock' => 480,
+            'alert_threshold' => 48,
+        ],
+        [
+            'name' => 'Chips Nature 100g',
+            'unit' => 'paquet',
+            'sale_unit' => 'carton',
+            'sale_conversion_rate' => 50,
+            'current_stock' => 350,
+            'alert_threshold' => 35,
+        ],
+        [
+            'name' => 'Biscuits Choco',
+            'unit' => 'paquet',
+            'sale_unit' => 'carton',
+            'sale_conversion_rate' => 24,
+            'current_stock' => 288,
+            'alert_threshold' => 24,
+        ],
+        [
+            'name' => 'Pain de mie 500g',
+            'unit' => 'paquet',
+            'sale_unit' => 'carton',
+            'sale_conversion_rate' => 20,
+            'current_stock' => 120,
+            'alert_threshold' => 12,
+        ],
+        [
+            'name' => 'Lait en poudre 400g',
+            'unit' => 'boite',
+            'sale_unit' => 'carton',
+            'sale_conversion_rate' => 12,
+            'current_stock' => 144,
+            'alert_threshold' => 12,
+        ],
+        [
+            'name' => 'Café soluble 200g',
+            'unit' => 'boite',
+            'sale_unit' => 'carton',
+            'sale_conversion_rate' => 12,
+            'current_stock' => 96,
+            'alert_threshold' => 10,
+        ],
+        [
+            'name' => 'Sucre en morceaux',
+            'unit' => 'boite',
+            'sale_unit' => 'carton',
+            'sale_conversion_rate' => 10,
+            'current_stock' => 150,
+            'alert_threshold' => 15,
+        ],
+        [
+            'name' => 'Thé Lipton 25 sachets',
+            'unit' => 'boite',
+            'sale_unit' => 'carton',
+            'sale_conversion_rate' => 24,
+            'current_stock' => 192,
+            'alert_threshold' => 20,
+        ],
+    ];
 
-        $products = [];
-        foreach ($productData as $data) {
-            $product = Product::firstOrCreate(
-                ['name' => $data['name']],
-                array_merge($data, [
-                    'description' => 'Produit de consommation courante',
-                    'is_active' => true,
-                    'created_by' => $adminId,
-                ])
-            );
-            $products[] = $product;
-        }
+    $products = [];
 
-        return $products;
+    foreach ($productData as $data) {
+        $products[] = Product::firstOrCreate(
+            ['name' => $data['name']],
+            array_merge($data, [
+                'description' => 'Produit de consommation courante',
+                'is_active' => true,
+                'created_by' => $adminId,
+            ])
+        );
     }
+
+    return $products;
+}
 
     /**
      * Create realistic stock movements (entries and exits)

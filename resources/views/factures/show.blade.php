@@ -17,12 +17,14 @@
                 </a>
                 @endcan
                 @can('facture.cancel')
-                    @if(!$facture->isCancelled())
+                    @if(!$facture->isCancelled() && !$facture->isPaid())
                     <button class="btn btn-danger btn-sm"
                             x-data
                             @click="$dispatch('open-cancel-modal', { id: {{ $facture->id }}, number: '{{ $facture->number }}' })">
                         Annuler
                     </button>
+                    @elseif($facture->isPaid())
+                    <span class="badge badge-success">✓ Payée - Non annulable</span>
                     @endif
                 @endcan
             </div>
