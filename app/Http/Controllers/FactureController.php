@@ -17,7 +17,7 @@ class FactureController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Invoice::with(['createdBy', 'cancelledBy']);
+        $query = Invoice::with(['createdBy', 'cancelledBy', 'markedBy']);
 
         // Filter by search (number or client name)
         if ($request->filled('search')) {
@@ -44,6 +44,11 @@ class FactureController extends Controller
         // Filter by client
         if ($request->filled('client')) {
             $query->where('client_name', 'like', '%' . $request->client . '%');
+        }
+
+        // Filter by marked for cancellation
+        if ($request->filled('marked') && $request->marked === '1') {
+            $query->where('marked_for_cancellation', true);
         }
 
         $invoices = $query->latest()->paginate(20);
@@ -107,6 +112,43 @@ class FactureController extends Controller
         ];
 
         return view('factures.show', compact('facture', 'paymentSummary'));
+    }
+
+    /**
+     * Mark an invoice for cancellation (for users without facture.cancel permission)
+     */
+    public function markForCancellation(Invoice $facture)
+    {
+        // Only users without cancel permission can mark
+        if (Auth::user()->hasPermissionTo('facture.cancel')) {
+            return redirect()
+                ->back()
+                ->with('error', 'Les administrateurs n\'ont pas besoin de marquer les factures. Annulez directement.');
+        }
+
+        // Can't mark already cancelled invoices
+        if ($facture->isCancelled()) {
+            return redirect()
+                ->back()
+                ->with('error', 'Cette facture est déjà annulée.');
+        }
+
+        // Toggle the mark
+        $isMarked = $facture->marked_for_cancellation;
+
+        $facture->update([
+            'marked_for_cancellation' => !$isMarked,
+            'marked_by' => !$isMarked ? Auth::id() : null,
+            'marked_at' => !$isMarked ? now() : null,
+        ]);
+
+        $message = !$isMarked
+            ? 'Facture ' . $facture->number . ' marquée pour annulation.'
+            : 'Marque d\'annulation retirée pour la facture ' . $facture->number . '.';
+
+        return redirect()
+            ->back()
+            ->with('success', $message);
     }
 
     /**

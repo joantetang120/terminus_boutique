@@ -38,6 +38,10 @@
                 <option value="SOLDEE" {{ request('status') === 'SOLDEE' ? 'selected' : '' }}>Soldée</option>
                 <option value="ANNULEE" {{ request('status') === 'ANNULEE' ? 'selected' : '' }}>Annulée</option>
             </select>
+            <select name="marked" class="form-select" style="width:160px;{{ request('marked') === '1' ? 'border-color:#E67E22;' : '' }}">
+                <option value="">Toutes les factures</option>
+                <option value="1" {{ request('marked') === '1' ? 'selected' : '' }}>🚩 À annuler</option>
+            </select>
             <div style="display:flex;align-items:center;gap:4px;">
                 <input type="date" name="date_from" class="form-input" style="width:130px;" value="{{ request('date_from') }}" title="Du">
                 <span style="color:#64748B;">→</span>
@@ -67,8 +71,15 @@
                 @php
                     $dueDiff = now()->diffInDays($invoice->due_date, false);
                 @endphp
-                <tr class="clickable-row" onclick="window.location.href='{{ route('factures.show', $invoice) }}'" style="cursor:pointer;">
-                    <td><strong>{{ $invoice->number }}</strong></td>
+                <tr class="clickable-row {{ $invoice->marked_for_cancellation ? 'row-marked' : '' }}" onclick="window.location.href='{{ route('factures.show', $invoice) }}'" style="cursor:pointer;{{ $invoice->marked_for_cancellation ? 'background:#FEF3C7;' : '' }}">
+                    <td>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <strong>{{ $invoice->number }}</strong>
+                            @if($invoice->marked_for_cancellation)
+                                <span style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;background:#C0392B;border-radius:50%;color:white;font-size:12px;" title="Marquée pour annulation par {{ $invoice->markedBy?->name ?? 'Utilisateur' }}">✓</span>
+                            @endif
+                        </div>
+                    </td>
                     <td>{{ $invoice->created_at->format('d/m/Y H:i') }}</td>
                     <td>{{ $invoice->client_name }}</td>
                     <td>{{ number_format($invoice->total, 0, ',', ' ') }} FCFA</td>
@@ -110,11 +121,24 @@
                             <a href="{{ route('factures.show', $invoice) }}" class="btn btn-secondary btn-sm">Voir</a>
                             @can('facture.cancel')
                                 @if(!$invoice->isCancelled())
-                                <button class="btn btn-danger btn-sm"
-                                        x-data
-                                        @click="$dispatch('open-cancel-modal', { id: {{ $invoice->id }}, number: '{{ $invoice->number }}' })">
-                                    Annuler
-                                </button>
+                                    @if($invoice->marked_for_cancellation)
+                                        <span style="padding:2px 8px;background:#FEF3C7;border:1px solid #E67E22;border-radius:4px;font-size:0.75rem;color:#92400E;" title="Marquée par {{ $invoice->markedBy?->name ?? 'Utilisateur' }}">🚩 À annuler</span>
+                                    @endif
+                                    <button class="btn btn-danger btn-sm"
+                                            x-data
+                                            @click="$dispatch('open-cancel-modal', { id: {{ $invoice->id }}, number: '{{ $invoice->number }}' })">
+                                        Annuler
+                                    </button>
+                                @endif
+                            @else
+                                {{-- Users without cancel permission can mark for cancellation --}}
+                                @if(!$invoice->isCancelled())
+                                    <form method="POST" action="{{ route('factures.mark-for-cancellation', $invoice) }}" style="display:inline;">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm {{ $invoice->marked_for_cancellation ? 'btn-warning' : 'btn-accent' }}" style="{{ $invoice->marked_for_cancellation ? '' : 'background:#F39C12;color:white;' }}" title="{{ $invoice->marked_for_cancellation ? 'Retirer la marque' : 'Marquer pour annulation' }}">
+                                            {{ $invoice->marked_for_cancellation ? '✓ Marquée' : '🚩 À annuler' }}
+                                        </button>
+                                    </form>
                                 @endif
                             @endcan
                         </div>

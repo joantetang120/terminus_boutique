@@ -32,6 +32,8 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('factures', \App\Http\Controllers\FactureController::class);
     Route::post('factures/{facture}/cancel', [\App\Http\Controllers\FactureController::class, 'cancel'])
         ->name('factures.cancel')->middleware('can:facture.cancel');
+    Route::post('factures/{facture}/mark-for-cancellation', [\App\Http\Controllers\FactureController::class, 'markForCancellation'])
+        ->name('factures.mark-for-cancellation');
     Route::get('factures/{facture}/print', [\App\Http\Controllers\FactureController::class, 'print'])
         ->name('factures.print')->middleware('can:facture.print');
     Route::get('factures/{facture}/preview', [\App\Http\Controllers\FactureController::class, 'preview'])
