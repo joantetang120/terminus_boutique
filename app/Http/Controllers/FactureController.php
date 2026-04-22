@@ -133,6 +133,13 @@ class FactureController extends Controller
                 ->with('error', 'Cette facture est déjà annulée.');
         }
 
+        // Can't mark paid invoices
+        if ($facture->isPaid()) {
+            return redirect()
+                ->back()
+                ->with('error', 'Impossible de marquer une facture payée (soldée) pour annulation.');
+        }
+
         // Toggle the mark
         $isMarked = $facture->marked_for_cancellation;
 
@@ -157,6 +164,20 @@ class FactureController extends Controller
     public function cancel(Request $request, Invoice $facture)
     {
         $this->authorize('facture.cancel');
+
+        // Can't cancel paid invoices
+        if ($facture->isPaid()) {
+            return redirect()
+                ->back()
+                ->with('error', 'Impossible d\'annuler une facture payée (soldée).');
+        }
+
+        // Can't cancel already cancelled invoices
+        if ($facture->isCancelled()) {
+            return redirect()
+                ->back()
+                ->with('error', 'Cette facture est déjà annulée.');
+        }
 
         $validated = $request->validate([
             'cancel_reason' => 'required|string|min:10|max:500',
