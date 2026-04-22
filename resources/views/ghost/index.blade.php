@@ -112,7 +112,12 @@
                     @endforelse
                 </tbody>
             </table>
-            <div style="padding: 16px; border-top: 1px solid #e2e8f0;">{{ $ghostInvoices->links() }}</div>
+            <div class="pagination-wrapper">
+                {{ $ghostInvoices->links() }}
+                <div class="pagination-info">
+                    Affichage {{ $ghostInvoices->firstItem() ?? 0 }} - {{ $ghostInvoices->lastItem() ?? 0 }} sur {{ $ghostInvoices->total() }} factures fantômes
+                </div>
+            </div>
         </div>
     </div>
 </x-app-layout>

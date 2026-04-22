@@ -152,8 +152,11 @@
             </tbody>
         </table>
 
-        <div style="padding:16px;">
+        <div class="pagination-wrapper">
             {{ $invoices->links() }}
+            <div class="pagination-info">
+                Affichage {{ $invoices->firstItem() ?? 0 }} - {{ $invoices->lastItem() ?? 0 }} sur {{ $invoices->total() }} factures
+            </div>
         </div>
     </div>
 

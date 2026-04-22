@@ -94,8 +94,11 @@
             </tbody>
         </table>
 
-        <div style="padding:16px;">
+        <div class="pagination-wrapper">
             {{ $products->links() }}
+            <div class="pagination-info">
+                Affichage {{ $products->firstItem() ?? 0 }} - {{ $products->lastItem() ?? 0 }} sur {{ $products->total() }} produits
+            </div>
         </div>
     </div>
 

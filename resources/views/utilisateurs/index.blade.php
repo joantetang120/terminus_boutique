@@ -45,6 +45,11 @@
                 @endforelse
             </tbody>
         </table>
-        <div style="padding:16px;">{{ $users->links() }}</div>
+        <div class="pagination-wrapper">
+            {{ $users->links() }}
+            <div class="pagination-info">
+                Affichage {{ $users->firstItem() ?? 0 }} - {{ $users->lastItem() ?? 0 }} sur {{ $users->total() }} utilisateurs
+            </div>
+        </div>
     </div>
 </x-app-layout>
