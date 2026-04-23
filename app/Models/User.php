@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Activitylog\Support\LogOptions;
 
 class User extends Authenticatable
@@ -19,11 +20,14 @@ class User extends Authenticatable
         'password',
         'is_active',
         'created_by',
+        'ghost_division_coefficient',
+        'ghost_access_password',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'ghost_access_password',
     ];
 
     protected function casts(): array
@@ -32,14 +36,37 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'ghost_division_coefficient' => 'decimal:2',
         ];
     }
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'email', 'is_active'])
-            ->logOnlyDirty();
+            ->logOnly(['name', 'email', 'is_active', 'created_by'])
+            ->logOnlyDirty()
+            ->setDescriptionForEvent(function (string $eventName) {
+                $translations = [
+                    'created' => 'créé',
+                    'updated' => 'modifié',
+                    'deleted' => 'supprimé',
+                ];
+                return "Utilisateur " . ($translations[$eventName] ?? $eventName);
+            });
+    }
+
+    public function tapActivity(Activity $activity, string $eventName)
+    {
+        // Customize description for activation/deactivation
+        if ($eventName === 'updated') {
+            $properties = $activity->properties->toArray();
+            $old = $properties['old'] ?? [];
+            $new = $properties['attributes'] ?? [];
+
+            if (isset($old['is_active']) && isset($new['is_active'])) {
+                $activity->description = $new['is_active'] ? 'Utilisateur activé' : 'Utilisateur désactivé';
+            }
+        }
     }
 
     public function createdBy()

@@ -4,8 +4,11 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ResetPasswordController;
+use App\Http\Controllers\ProfileController;
 
 // Auth
+Route::get('/', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/', [AuthController::class, 'login']);
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -27,22 +30,61 @@ Route::middleware(['auth'])->group(function () {
 
     // Factures
     Route::resource('factures', \App\Http\Controllers\FactureController::class);
-    Route::post('factures/{facture}/annuler', [\App\Http\Controllers\FactureController::class, 'annuler'])
-        ->name('factures.annuler')->middleware('can:facture.cancel');
+    Route::post('factures/{facture}/cancel', [\App\Http\Controllers\FactureController::class, 'cancel'])
+        ->name('factures.cancel')->middleware('can:facture.cancel');
+    Route::post('factures/{facture}/mark-for-cancellation', [\App\Http\Controllers\FactureController::class, 'markForCancellation'])
+        ->name('factures.mark-for-cancellation');
+    Route::get('factures/{facture}/print', [\App\Http\Controllers\FactureController::class, 'print'])
+        ->name('factures.print')->middleware('can:facture.print');
+    Route::get('factures/{facture}/preview', [\App\Http\Controllers\FactureController::class, 'preview'])
+        ->name('factures.preview')->middleware('can:facture.print');
 
-    // Stock
-    Route::get('stock', [\App\Http\Controllers\StockController::class, 'index'])->name('stock.index');
-    Route::post('stock/entree', [\App\Http\Controllers\StockController::class, 'entree'])->name('stock.entree');
-    Route::post('stock/sortie', [\App\Http\Controllers\StockController::class, 'sortie'])->name('stock.sortie');
-    Route::post('stock/{mouvement}/annuler', [\App\Http\Controllers\StockController::class, 'annuler'])
-        ->name('stock.annuler')->middleware('can:stock.cancel');
+    // Stock - Groupe préfixé avec middleware can
+    Route::prefix('stock')->middleware('can:stock.view')->group(function () {
+        Route::get('history', [\App\Http\Controllers\StockController::class, 'index'])->name('stock.index');
+        Route::post('entry', [\App\Http\Controllers\StockController::class, 'entree'])
+            ->name('stock.entree')->middleware('can:stock.create');
+        Route::post('exit', [\App\Http\Controllers\StockController::class, 'sortie'])
+            ->name('stock.sortie')->middleware('can:stock.create');
+        Route::post('{mouvement}/cancel', [\App\Http\Controllers\StockController::class, 'annuler'])
+            ->name('stock.annuler')->middleware('can:stock.cancel');
+    });
 
-    // Produits
-    Route::resource('produits', \App\Http\Controllers\ProduitController::class)->only(['index', 'create', 'store']);
+    // Produits - CRUD complet avec permissions
+    Route::prefix('products')->middleware('can:product.view')->group(function () {
+        Route::get('/', [\App\Http\Controllers\ProduitController::class, 'index'])->name('produits.index');
+        Route::get('create', [\App\Http\Controllers\ProduitController::class, 'create'])
+            ->name('produits.create')->middleware('can:product.create');
+        Route::post('/', [\App\Http\Controllers\ProduitController::class, 'store'])
+            ->name('produits.store')->middleware('can:product.create');
+        Route::get('{produit}', [\App\Http\Controllers\ProduitController::class, 'show'])
+            ->name('produits.show');
+        Route::get('{produit}/edit', [\App\Http\Controllers\ProduitController::class, 'edit'])
+            ->name('produits.edit')->middleware('can:product.edit');
+        Route::put('{produit}', [\App\Http\Controllers\ProduitController::class, 'update'])
+            ->name('produits.update')->middleware('can:product.edit');
+        Route::delete('{produit}', [\App\Http\Controllers\ProduitController::class, 'destroy'])
+            ->name('produits.destroy')->middleware('can:product.edit');
+    });
 
-    // Ghost
-    Route::get('ghost', [\App\Http\Controllers\GhostController::class, 'index'])
-        ->name('ghost.index')->middleware('can:ghost.view');
+    // Ghost Invoices - Password protected access
+    Route::prefix('ghost-invoices')->middleware('can:ghost.view')->group(function () {
+        // Password verification routes (no ghost.session required)
+        Route::get('/access', [\App\Http\Controllers\GhostInvoiceController::class, 'passwordForm'])
+            ->name('ghost.password');
+        Route::post('/access', [\App\Http\Controllers\GhostInvoiceController::class, 'verifyPassword'])
+            ->name('ghost.verify');
+        Route::post('/logout', [\App\Http\Controllers\GhostInvoiceController::class, 'logout'])
+            ->name('ghost.logout');
+
+        // Protected routes (require ghost.session)
+        Route::middleware([\App\Http\Middleware\GhostAccessMiddleware::class])->group(function () {
+            Route::get('/', [\App\Http\Controllers\GhostInvoiceController::class, 'index'])
+                ->name('ghost.index');
+            Route::get('/{ghostInvoice}', [\App\Http\Controllers\GhostInvoiceController::class, 'show'])
+                ->name('ghost.show');
+        });
+    });
 
     // Comptabilité
     Route::get('comptabilite', [\App\Http\Controllers\ComptaController::class, 'index'])->name('comptabilite.index');
@@ -61,4 +103,17 @@ Route::middleware(['auth'])->group(function () {
     // Audit
     Route::get('audit', [\App\Http\Controllers\AuditController::class, 'index'])
         ->name('audit.index')->middleware('can:audit.view');
+        
+    // Profile
+    Route::get('profile', [\App\Http\Controllers\ProfileController::class, 'show'])
+        ->name('profile.show');
+
+    Route::post('/profile/request-update', [\App\Http\Controllers\ProfileController::class, 'requestUpdate'])
+    ->name('profile.request_update');
+
+    Route::get('/profile/verify', [ProfileController::class, 'verifyForm'])->name('profile.verify_form');
+
+Route::post('/profile/confirm-update', [ProfileController::class, 'confirmUpdate'])->name('profile.confirm_update');
+    
 });
+

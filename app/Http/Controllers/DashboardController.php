@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\AccountingEntry;
+use App\Services\DueDateAlertService;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     public function index()
     {
+        // Mark overdue invoices on dashboard load
+        DueDateAlertService::markOverdue();
+
         $today = today();
 
         $invoicesToday = Invoice::whereDate('created_at', $today)->count();
@@ -43,11 +47,41 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        $unpaidInvoices = Invoice::whereIn('status', ['credit', 'avance'])
+        $unpaidInvoices = Invoice::whereIn('status', ['IMPAYEE', 'PARTIELLE', 'EN_RETARD'])
             ->where('balance', '>', 0)
             ->with('createdBy')
             ->latest()
             ->get();
+
+        // Invoice stats for dashboard widget
+        $todayTotal = Invoice::whereDate('created_at', $today)
+            ->whereNotIn('status', ['ANNULEE'])
+            ->sum('total');
+
+        $unpaidCount = Invoice::whereIn('status', ['IMPAYEE', 'PARTIELLE', 'EN_RETARD'])
+            ->where('balance', '>', 0)
+            ->count();
+
+        $unpaidBalance = Invoice::whereIn('status', ['IMPAYEE', 'PARTIELLE', 'EN_RETARD'])
+            ->sum('balance');
+
+        $overdueCount = Invoice::where('status', 'EN_RETARD')
+            ->count();
+
+        $alertCount = Invoice::where('status', '!=', 'ANNULEE')
+            ->where('due_date', '<=', $today->copy()->addDays(3))
+            ->where('due_date', '>=', $today)
+            ->where('balance', '>', 0)
+            ->count();
+
+        $invoiceStats = [
+            'today_count' => $invoicesToday,
+            'today_total' => $todayTotal,
+            'unpaid_count' => $unpaidCount,
+            'unpaid_balance' => $unpaidBalance,
+            'overdue_count' => $overdueCount,
+            'alert_count' => $alertCount,
+        ];
 
         return view('dashboard.index', compact(
             'invoicesToday',
@@ -58,7 +92,8 @@ class DashboardController extends Controller
             'todayRevenue',
             'todayExpenses',
             'recentInvoices',
-            'unpaidInvoices'
+            'unpaidInvoices',
+            'invoiceStats'
         ));
     }
 }

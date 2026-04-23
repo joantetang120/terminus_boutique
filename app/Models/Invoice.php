@@ -4,24 +4,27 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 class Invoice extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, SoftDeletes;
 
     protected $fillable = [
         'number',
-        'type',
         'status',
+        'marked_for_cancellation',
+        'marked_by',
+        'marked_at',
         'client_name',
         'client_phone',
         'total',
-        'advance_amount',
+        'paid_amount',
         'balance',
-        'note',
+        'due_date',
         'created_by',
         'cancelled_by',
         'cancelled_at',
@@ -32,10 +35,32 @@ class Invoice extends Model
     {
         return [
             'total' => 'decimal:2',
-            'advance_amount' => 'decimal:2',
+            'paid_amount' => 'decimal:2',
             'balance' => 'decimal:2',
+            'due_date' => 'date',
             'cancelled_at' => 'datetime',
+            'marked_for_cancellation' => 'boolean',
+            'marked_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (Invoice $invoice) {
+            // Auto-set due_date to created_at + 10 days if not provided
+            if (empty($invoice->due_date)) {
+                $invoice->due_date = now()->addDays(10)->format('Y-m-d');
+            }
+            // Initialize balance
+            $invoice->balance = $invoice->total - $invoice->paid_amount;
+        });
+
+        static::updating(function (Invoice $invoice) {
+            // Recalculate balance when paid_amount changes
+            if ($invoice->isDirty('paid_amount') || $invoice->isDirty('total')) {
+                $invoice->balance = $invoice->total - $invoice->paid_amount;
+            }
+        });
     }
 
     public static function generateNumber(): string
@@ -48,7 +73,7 @@ class Invoice extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['number', 'type', 'status', 'client_name', 'total', 'balance'])
+            ->logOnly(['number', 'status', 'client_name', 'total', 'balance', 'due_date'])
             ->logOnlyDirty();
     }
 
@@ -67,6 +92,11 @@ class Invoice extends Model
         return $this->belongsTo(User::class, 'cancelled_by');
     }
 
+    public function markedBy()
+    {
+        return $this->belongsTo(User::class, 'marked_by');
+    }
+
     public function payments()
     {
         return $this->hasMany(InvoicePayment::class);
@@ -79,16 +109,61 @@ class Invoice extends Model
 
     public function isCancelled(): bool
     {
-        return $this->status === 'annulee';
+        return $this->status === 'ANNULEE';
     }
 
     public function isPaid(): bool
     {
-        return $this->status === 'payee';
+        return $this->status === 'SOLDEE';
     }
 
-    public function isCredit(): bool
+    public function isUnpaid(): bool
     {
-        return $this->status === 'credit';
+        return $this->status === 'IMPAYEE';
+    }
+
+    public function isPartial(): bool
+    {
+        return $this->status === 'PARTIELLE';
+    }
+
+    public function isMarkedForCancellation(): bool
+    {
+        return $this->marked_for_cancellation === true;
+    }
+
+    public function updateStatusFromPayment(): void
+    {
+        if ($this->paid_amount >= $this->total) {
+            $this->status = 'SOLDEE';
+        } elseif ($this->paid_amount > 0) {
+            $this->status = 'PARTIELLE';
+        } else {
+            $this->status = 'IMPAYEE';
+        }
+    }
+
+    public function getStatusBadgeClass(): string
+    {
+        return match($this->status) {
+            'SOLDEE' => 'badge-success',
+            'PARTIELLE' => 'badge-warning',
+            'IMPAYEE' => 'badge-info',
+            'EN_RETARD' => 'badge-danger',
+            'ANNULEE' => 'badge-danger',
+            default => 'badge-secondary',
+        };
+    }
+
+    public function getStatusLabel(): string
+    {
+        return match($this->status) {
+            'SOLDEE' => 'Soldée',
+            'PARTIELLE' => 'Partielle',
+            'IMPAYEE' => 'Impayée',
+            'EN_RETARD' => 'En retard',
+            'ANNULEE' => 'Annulée',
+            default => $this->status,
+        };
     }
 }

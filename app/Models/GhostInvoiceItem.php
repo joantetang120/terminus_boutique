@@ -13,18 +13,23 @@ class GhostInvoiceItem extends Model
 
     protected $fillable = [
         'ghost_invoice_id',
+        'product_id',
         'designation',
-        'unit',
-        'quantity',
+        'unit_sold',
+        'quantity_sold',
+        'quantity_deducted',
         'unit_price',
+        'original_price',
         'total_price',
     ];
 
     protected function casts(): array
     {
         return [
-            'quantity' => 'decimal:2',
+            'quantity_sold' => 'decimal:2',
+            'quantity_deducted' => 'decimal:2',
             'unit_price' => 'decimal:2',
+            'original_price' => 'decimal:2',
             'total_price' => 'decimal:2',
         ];
     }

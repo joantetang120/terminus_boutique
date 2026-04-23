@@ -2,214 +2,258 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\InvoiceRequest;
 use App\Models\Invoice;
-use App\Models\InvoiceItem;
-use App\Models\GhostInvoice;
-use App\Models\GhostInvoiceItem;
-use App\Models\StockMovement;
-use App\Models\AccountingEntry;
 use App\Models\Product;
+use App\Services\InvoicePdfService;
+use App\Services\InvoiceService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
 class FactureController extends Controller
 {
+    /**
+     * Display a paginated list of invoices with filters
+     */
     public function index(Request $request)
     {
-        $query = Invoice::with(['createdBy', 'cancelledBy']);
+        $query = Invoice::with(['createdBy', 'cancelledBy', 'markedBy']);
 
+        // Filter by search (number or client name)
         if ($request->filled('search')) {
-            $query->where(function($q) use ($request) {
-                $q->where('number', 'like', '%' . $request->search . '%')
-                  ->orWhere('client_name', 'like', '%' . $request->search . '%');
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('number', 'like', '%' . $search . '%')
+                  ->orWhere('client_name', 'like', '%' . $search . '%');
             });
         }
 
-        if ($request->filled('type')) {
-            $query->where('type', $request->type);
-        }
-
+        // Filter by status
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        if ($request->filled('date')) {
-            $query->whereDate('created_at', $request->date);
+        // Filter by date range
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        // Filter by client
+        if ($request->filled('client')) {
+            $query->where('client_name', 'like', '%' . $request->client . '%');
+        }
+
+        // Filter by marked for cancellation
+        if ($request->filled('marked') && $request->marked === '1') {
+            $query->where('marked_for_cancellation', true);
         }
 
         $invoices = $query->latest()->paginate(20);
 
-        return view('factures.index', compact('invoices'));
+        // Summary: unpaid invoices count and total balance
+        $unpaidCount = Invoice::whereIn('status', ['IMPAYEE', 'PARTIELLE', 'EN_RETARD'])->count();
+        $unpaidTotal = Invoice::whereIn('status', ['IMPAYEE', 'PARTIELLE', 'EN_RETARD'])->sum('balance');
+
+        return view('factures.index', compact('invoices', 'unpaidCount', 'unpaidTotal'));
     }
 
+    /**
+     * Show the form for creating a new invoice
+     */
     public function create()
     {
-        $products = Product::where('is_active', true)->get();
+        $products = Product::where('is_active', true)
+            ->with(['unitConversions'])
+            ->select('id', 'name', 'unit', 'sale_unit', 'purchase_unit', 'sale_conversion_rate', 'purchase_conversion_rate',
+                     'base_sale_price', 'base_sale_margin_percentage', 'current_stock', 'alert_threshold', 'is_active')
+            ->get()
+            ->map(function ($product) {
+                $product->available_units = $product->getAvailableUnits();
+
+                // Build price map for each unit
+                $unitPrices = [];
+
+                // Base unit price
+                if ($product->base_sale_price) {
+                    $baseMinPrice = $product->base_sale_price * (1 - ($product->base_sale_margin_percentage ?? 0) / 100);
+                    $unitPrices[$product->unit] = [
+                        'sale_price' => (float) $product->base_sale_price,
+                        'margin_percentage' => (float) ($product->base_sale_margin_percentage ?? 0),
+                        'minimum_price' => (float) $baseMinPrice,
+                    ];
+                }
+
+                // Sale conversion prices
+                foreach ($product->unitConversions as $conversion) {
+                    if ($conversion->sale_price) {
+                        $minPrice = $conversion->sale_price * (1 - ($conversion->sale_margin_percentage ?? 0) / 100);
+                        $unitPrices[$conversion->unit] = [
+                            'sale_price' => (float) $conversion->sale_price,
+                            'margin_percentage' => (float) ($conversion->sale_margin_percentage ?? 0),
+                            'minimum_price' => (float) $minPrice,
+                        ];
+                    }
+                }
+
+                $product->unit_prices = $unitPrices;
+
+                return $product;
+            });
         return view('factures.create', compact('products'));
     }
 
-    public function store(Request $request)
+    /**
+     * Store a newly created invoice using InvoiceService
+     */
+    public function store(InvoiceRequest $request)
     {
-        $validated = $request->validate([
-            'client_name' => 'required|string|max:255',
-            'client_phone' => 'nullable|string|max:50',
-            'type' => 'required|in:comptant,credit,avance',
-            'advance_amount' => 'nullable|numeric|min:0',
-            'note' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.designation' => 'required|string',
-            'items.*.unit' => 'required|in:carton,boite,paquet,piece',
-            'items.*.quantity' => 'required|numeric|min:0.01',
-            'items.*.unit_price' => 'required|numeric|min:0',
-            'items.*.original_price' => 'nullable|numeric|min:0',
-            'items.*.product_id' => 'nullable|exists:products,id',
-        ]);
+        $validated = $request->validated();
 
-        $total = collect($validated['items'])->sum(fn($item) => $item['quantity'] * $item['unit_price']);
-        $advanceAmount = $validated['type'] === 'avance' ? ($validated['advance_amount'] ?? 0) : 0;
-        $balance = $validated['type'] === 'comptant' ? 0 : ($total - $advanceAmount);
-        $status = $validated['type'] === 'comptant' ? 'payee' : ($validated['type'] === 'credit' ? 'credit' : 'avance');
+        try {
+            $invoice = InvoiceService::create($validated, Auth::id());
 
-        DB::transaction(function () use ($validated, $total, $advanceAmount, $balance, $status) {
-            $invoice = Invoice::create([
-                'number' => Invoice::generateNumber(),
-                'type' => $validated['type'],
-                'status' => $status,
-                'client_name' => $validated['client_name'],
-                'client_phone' => $validated['client_phone'] ?? null,
-                'total' => $total,
-                'advance_amount' => $advanceAmount,
-                'balance' => $balance,
-                'note' => $validated['note'] ?? null,
-                'created_by' => Auth::id(),
-            ]);
-
-            foreach ($validated['items'] as $itemData) {
-                $itemPrice = $itemData['unit_price'] * $itemData['quantity'];
-                InvoiceItem::create([
-                    'invoice_id' => $invoice->id,
-                    'designation' => $itemData['designation'],
-                    'unit' => $itemData['unit'],
-                    'quantity' => $itemData['quantity'],
-                    'unit_price' => $itemData['unit_price'],
-                    'original_price' => $itemData['original_price'] ?? $itemData['unit_price'],
-                    'total_price' => $itemPrice,
-                ]);
-
-                // Update stock
-                if (isset($itemData['product_id'])) {
-                    StockMovement::create([
-                        'product_id' => $itemData['product_id'],
-                        'type' => 'exit',
-                        'quantity' => $itemData['quantity'],
-                        'reference_type' => 'invoice',
-                        'reference_id' => $invoice->id,
-                        'created_by' => Auth::id(),
-                    ]);
-
-                    Product::where('id', $itemData['product_id'])
-                        ->decrement('current_stock', $itemData['quantity']);
-                }
-            }
-
-            // Ghost invoice
-            $ghostInvoice = GhostInvoice::create([
-                'real_invoice_id' => $invoice->id,
-                'number' => $invoice->number,
-                'type' => $invoice->type,
-                'status' => $invoice->status,
-                'client_name' => $invoice->client_name,
-                'client_phone' => $invoice->client_phone,
-                'total' => $invoice->total,
-                'advance_amount' => $invoice->advance_amount,
-                'balance' => $invoice->balance,
-                'created_by' => Auth::id(),
-            ]);
-
-            foreach ($invoice->items as $item) {
-                GhostInvoiceItem::create([
-                    'ghost_invoice_id' => $ghostInvoice->id,
-                    'designation' => $item->designation,
-                    'unit' => $item->unit,
-                    'quantity' => $item->quantity,
-                    'unit_price' => $item->unit_price,
-                    'total_price' => $item->total_price,
-                ]);
-            }
-
-            // Accounting entry for comptant or advance
-            if ($validated['type'] === 'comptant') {
-                AccountingEntry::create([
-                    'date' => now(),
-                    'type' => 'recette',
-                    'amount' => $total,
-                    'reference_type' => 'invoice',
-                    'reference_id' => $invoice->id,
-                    'description' => 'Facture ' . $invoice->number . ' - ' . $invoice->client_name,
-                    'status' => 'active',
-                    'created_by' => Auth::id(),
-                ]);
-            } elseif ($validated['type'] === 'avance' && $advanceAmount > 0) {
-                AccountingEntry::create([
-                    'date' => now(),
-                    'type' => 'recette',
-                    'amount' => $advanceAmount,
-                    'reference_type' => 'invoice',
-                    'reference_id' => $invoice->id,
-                    'description' => 'Avance facture ' . $invoice->number . ' - ' . $invoice->client_name,
-                    'status' => 'active',
-                    'created_by' => Auth::id(),
-                ]);
-            }
-        });
-
-        return redirect()->route('factures.index')->with('success', 'Facture créée avec succès.');
+            return redirect()
+                ->route('factures.show', $invoice)
+                ->with('success', 'Facture ' . $invoice->number . ' créée avec succès.');
+        } catch (\Exception $e) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Erreur lors de la création de la facture: ' . $e->getMessage());
+        }
     }
 
+    /**
+     * Display the specified invoice with items and payment summary
+     */
     public function show(Invoice $facture)
     {
-        $facture->load(['items', 'createdBy', 'cancelledBy', 'payments']);
-        return view('factures.show', compact('facture'));
+        $facture->load(['items.product', 'createdBy', 'cancelledBy', 'payments']);
+
+        // Calculate payment summary
+        $paymentSummary = [
+            'total_payments' => $facture->payments->sum('amount'),
+            'payment_count' => $facture->payments->count(),
+            'last_payment' => $facture->payments->sortByDesc('payment_date')->first(),
+        ];
+
+        return view('factures.show', compact('facture', 'paymentSummary'));
     }
 
-    public function annuler(Request $request, Invoice $facture)
+    /**
+     * Mark an invoice for cancellation (for users without facture.cancel permission)
+     */
+    public function markForCancellation(Invoice $facture)
+    {
+        // Only users without cancel permission can mark
+        if (Auth::user()->hasPermissionTo('facture.cancel')) {
+            return redirect()
+                ->back()
+                ->with('error', 'Les administrateurs n\'ont pas besoin de marquer les factures. Annulez directement.');
+        }
+
+        // Can't mark already cancelled invoices
+        if ($facture->isCancelled()) {
+            return redirect()
+                ->back()
+                ->with('error', 'Cette facture est déjà annulée.');
+        }
+
+        // Can't mark paid invoices
+        if ($facture->isPaid()) {
+            return redirect()
+                ->back()
+                ->with('error', 'Impossible de marquer une facture payée (soldée) pour annulation.');
+        }
+
+        // Toggle the mark
+        $isMarked = $facture->marked_for_cancellation;
+
+        $facture->update([
+            'marked_for_cancellation' => !$isMarked,
+            'marked_by' => !$isMarked ? Auth::id() : null,
+            'marked_at' => !$isMarked ? now() : null,
+        ]);
+
+        $message = !$isMarked
+            ? 'Facture ' . $facture->number . ' marquée pour annulation.'
+            : 'Marque d\'annulation retirée pour la facture ' . $facture->number . '.';
+
+        return redirect()
+            ->back()
+            ->with('success', $message);
+    }
+
+    /**
+     * Cancel an invoice using InvoiceService (requires facture.cancel permission)
+     */
+    public function cancel(Request $request, Invoice $facture)
     {
         $this->authorize('facture.cancel');
 
+        // Can't cancel paid invoices
+        if ($facture->isPaid()) {
+            return redirect()
+                ->back()
+                ->with('error', 'Impossible d\'annuler une facture payée (soldée).');
+        }
+
+        // Can't cancel already cancelled invoices
+        if ($facture->isCancelled()) {
+            return redirect()
+                ->back()
+                ->with('error', 'Cette facture est déjà annulée.');
+        }
+
         $validated = $request->validate([
-            'cancel_reason' => 'required|string|min:10',
+            'cancel_reason' => 'required|string|min:10|max:500',
         ]);
 
-        DB::transaction(function () use ($facture, $validated) {
-            $facture->update([
-                'status' => 'annulee',
-                'cancelled_by' => Auth::id(),
-                'cancelled_at' => now(),
-                'cancel_reason' => $validated['cancel_reason'],
-            ]);
+        try {
+            InvoiceService::cancel($facture, $validated['cancel_reason'], Auth::user());
 
-            // Restore stock - match products by designation
-            foreach ($facture->items as $item) {
-                $product = Product::where('name', $item->designation)->first();
-                
-                StockMovement::create([
-                    'product_id' => $product?->id,
-                    'type' => 'cancel',
-                    'quantity' => $item->quantity,
-                    'reference_type' => 'invoice',
-                    'reference_id' => $facture->id,
-                    'note' => 'Annulation facture ' . $facture->number,
-                    'created_by' => Auth::id(),
-                ]);
+            return redirect()
+                ->route('factures.index')
+                ->with('success', 'Facture ' . $facture->number . ' annulée avec succès.');
+        } catch (\Exception $e) {
+            return redirect()
+                ->back()
+                ->with('error', 'Erreur lors de l\'annulation: ' . $e->getMessage());
+        }
+    }
 
-                if ($product) {
-                    Product::where('id', $product->id)
-                        ->increment('current_stock', $item->quantity);
-                }
-            }
-        });
+    /**
+     * Generate and download PDF of the invoice (requires facture.print permission)
+     */
+    public function print(Invoice $facture)
+    {
+        $this->authorize('facture.print');
 
-        return redirect()->route('factures.index')->with('success', 'Facture annulée avec succès.');
+        try {
+            return InvoicePdfService::download($facture);
+        } catch (\Exception $e) {
+            return redirect()
+                ->back()
+                ->with('error', 'Erreur lors de la génération du PDF: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Preview PDF of the invoice in browser (requires facture.print permission)
+     */
+    public function preview(Invoice $facture)
+    {
+        $this->authorize('facture.print');
+
+        try {
+            return InvoicePdfService::stream($facture);
+        } catch (\Exception $e) {
+            return redirect()
+                ->back()
+                ->with('error', 'Erreur lors de la génération du PDF: ' . $e->getMessage());
+        }
     }
 }

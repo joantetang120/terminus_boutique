@@ -111,7 +111,12 @@
                 @endforelse
             </tbody>
         </table>
-        <div style="padding:16px;">{{ $entries->links() }}</div>
+        <div class="pagination-wrapper">
+            {{ $entries->links() }}
+            <div class="pagination-info">
+                Affichage {{ $entries->firstItem() ?? 0 }} - {{ $entries->lastItem() ?? 0 }} sur {{ $entries->total() }} écritures
+            </div>
+        </div>
     </div>
     @else
     {{-- Modifications Table --}}
@@ -162,7 +167,12 @@
                 @endforelse
             </tbody>
         </table>
-        <div style="padding:16px;">{{ $modifications->links() }}</div>
+        <div class="pagination-wrapper">
+            {{ $modifications->links() }}
+            <div class="pagination-info">
+                Affichage {{ $modifications->firstItem() ?? 0 }} - {{ $modifications->lastItem() ?? 0 }} sur {{ $modifications->total() }} modifications
+            </div>
+        </div>
     </div>
     @endif
 
