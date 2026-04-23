@@ -112,6 +112,8 @@ class ProduitController extends Controller
                     'unit_type' => 'sale',
                     'unit' => $conversion['unit'],
                     'conversion_rate' => $conversion['conversion_rate'],
+                    'sale_price' => $conversion['sale_price'] ?? null,
+                    'sale_margin_percentage' => $conversion['sale_margin_percentage'] ?? null,
                 ]);
             }
         }
@@ -189,6 +191,8 @@ class ProduitController extends Controller
                     'unit_type' => 'sale',
                     'unit' => $conversion['unit'],
                     'conversion_rate' => $conversion['conversion_rate'],
+                    'sale_price' => $conversion['sale_price'] ?? null,
+                    'sale_margin_percentage' => $conversion['sale_margin_percentage'] ?? null,
                 ]);
             }
         }

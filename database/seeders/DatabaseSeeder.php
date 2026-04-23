@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Product;
+use App\Models\ProductUnitConversion;
 use App\Models\StockMovement;
 use App\Models\User;
 use Carbon\Carbon;
@@ -61,107 +62,182 @@ class DatabaseSeeder extends Seeder
 
     /**
      * Create realistic products commonly found in a boutique
+     * Includes base prices, sale prices, and unit conversion prices
      */
-  private function createRealisticProducts(int $adminId): array
-{
-    $productData = [
-        [
-            'name' => 'Eau Minérale 1.5L',
-            'unit' => 'piece',
-            'sale_unit' => 'carton',
-            'sale_conversion_rate' => 12,
-            'current_stock' => 240,
-            'alert_threshold' => 24,
-        ],
-        [
-            'name' => 'Jus d\'orange 1L',
-            'unit' => 'piece',
-            'sale_unit' => 'carton',
-            'sale_conversion_rate' => 12,
-            'current_stock' => 180,
-            'alert_threshold' => 18,
-        ],
-        [
-            'name' => 'Coca-Cola 33cl',
-            'unit' => 'piece',
-            'sale_unit' => 'carton',
-            'sale_conversion_rate' => 24,
-            'current_stock' => 480,
-            'alert_threshold' => 48,
-        ],
-        [
-            'name' => 'Chips Nature 100g',
-            'unit' => 'paquet',
-            'sale_unit' => 'carton',
-            'sale_conversion_rate' => 50,
-            'current_stock' => 350,
-            'alert_threshold' => 35,
-        ],
-        [
-            'name' => 'Biscuits Choco',
-            'unit' => 'paquet',
-            'sale_unit' => 'carton',
-            'sale_conversion_rate' => 24,
-            'current_stock' => 288,
-            'alert_threshold' => 24,
-        ],
-        [
-            'name' => 'Pain de mie 500g',
-            'unit' => 'paquet',
-            'sale_unit' => 'carton',
-            'sale_conversion_rate' => 20,
-            'current_stock' => 120,
-            'alert_threshold' => 12,
-        ],
-        [
-            'name' => 'Lait en poudre 400g',
-            'unit' => 'boite',
-            'sale_unit' => 'carton',
-            'sale_conversion_rate' => 12,
-            'current_stock' => 144,
-            'alert_threshold' => 12,
-        ],
-        [
-            'name' => 'Café soluble 200g',
-            'unit' => 'boite',
-            'sale_unit' => 'carton',
-            'sale_conversion_rate' => 12,
-            'current_stock' => 96,
-            'alert_threshold' => 10,
-        ],
-        [
-            'name' => 'Sucre en morceaux',
-            'unit' => 'boite',
-            'sale_unit' => 'carton',
-            'sale_conversion_rate' => 10,
-            'current_stock' => 150,
-            'alert_threshold' => 15,
-        ],
-        [
-            'name' => 'Thé Lipton 25 sachets',
-            'unit' => 'boite',
-            'sale_unit' => 'carton',
-            'sale_conversion_rate' => 24,
-            'current_stock' => 192,
-            'alert_threshold' => 20,
-        ],
-    ];
+    private function createRealisticProducts(int $adminId): array
+    {
+        $productData = [
+            [
+                'name' => 'Eau Minérale 1.5L',
+                'unit' => 'piece',
+                'sale_unit' => 'carton',
+                'sale_conversion_rate' => 12,
+                'current_stock' => 240,
+                'alert_threshold' => 24,
+                'base_sale_price' => 500,
+                'base_sale_margin_percentage' => 10,
+                'conversion_prices' => [
+                    ['unit' => 'carton', 'conversion_rate' => 12, 'sale_price' => 5500, 'sale_margin_percentage' => 8],
+                ],
+            ],
+            [
+                'name' => 'Jus d\'orange 1L',
+                'unit' => 'piece',
+                'sale_unit' => 'carton',
+                'sale_conversion_rate' => 12,
+                'current_stock' => 180,
+                'alert_threshold' => 18,
+                'base_sale_price' => 750,
+                'base_sale_margin_percentage' => 15,
+                'conversion_prices' => [
+                    ['unit' => 'carton', 'conversion_rate' => 12, 'sale_price' => 8500, 'sale_margin_percentage' => 10],
+                ],
+            ],
+            [
+                'name' => 'Coca-Cola 33cl',
+                'unit' => 'piece',
+                'sale_unit' => 'carton',
+                'sale_conversion_rate' => 24,
+                'current_stock' => 480,
+                'alert_threshold' => 48,
+                'base_sale_price' => 400,
+                'base_sale_margin_percentage' => 12,
+                'conversion_prices' => [
+                    ['unit' => 'carton', 'conversion_rate' => 24, 'sale_price' => 9000, 'sale_margin_percentage' => 10],
+                ],
+            ],
+            [
+                'name' => 'Chips Nature 100g',
+                'unit' => 'paquet',
+                'sale_unit' => 'carton',
+                'sale_conversion_rate' => 50,
+                'current_stock' => 350,
+                'alert_threshold' => 35,
+                'base_sale_price' => 600,
+                'base_sale_margin_percentage' => 20,
+                'conversion_prices' => [
+                    ['unit' => 'carton', 'conversion_rate' => 50, 'sale_price' => 28000, 'sale_margin_percentage' => 15],
+                ],
+            ],
+            [
+                'name' => 'Biscuits Choco',
+                'unit' => 'paquet',
+                'sale_unit' => 'carton',
+                'sale_conversion_rate' => 24,
+                'current_stock' => 288,
+                'alert_threshold' => 24,
+                'base_sale_price' => 550,
+                'base_sale_margin_percentage' => 18,
+                'conversion_prices' => [
+                    ['unit' => 'carton', 'conversion_rate' => 24, 'sale_price' => 12000, 'sale_margin_percentage' => 12],
+                ],
+            ],
+            [
+                'name' => 'Pain de mie 500g',
+                'unit' => 'paquet',
+                'sale_unit' => 'carton',
+                'sale_conversion_rate' => 20,
+                'current_stock' => 120,
+                'alert_threshold' => 12,
+                'base_sale_price' => 800,
+                'base_sale_margin_percentage' => 10,
+                'conversion_prices' => [
+                    ['unit' => 'carton', 'conversion_rate' => 20, 'sale_price' => 15000, 'sale_margin_percentage' => 8],
+                ],
+            ],
+            [
+                'name' => 'Lait en poudre 400g',
+                'unit' => 'boite',
+                'sale_unit' => 'carton',
+                'sale_conversion_rate' => 12,
+                'current_stock' => 144,
+                'alert_threshold' => 12,
+                'base_sale_price' => 1200,
+                'base_sale_margin_percentage' => 15,
+                'conversion_prices' => [
+                    ['unit' => 'carton', 'conversion_rate' => 12, 'sale_price' => 13500, 'sale_margin_percentage' => 10],
+                ],
+            ],
+            [
+                'name' => 'Café soluble 200g',
+                'unit' => 'boite',
+                'sale_unit' => 'carton',
+                'sale_conversion_rate' => 12,
+                'current_stock' => 96,
+                'alert_threshold' => 10,
+                'base_sale_price' => 2500,
+                'base_sale_margin_percentage' => 12,
+                'conversion_prices' => [
+                    ['unit' => 'carton', 'conversion_rate' => 12, 'sale_price' => 28000, 'sale_margin_percentage' => 10],
+                ],
+            ],
+            [
+                'name' => 'Sucre en morceaux',
+                'unit' => 'boite',
+                'sale_unit' => 'carton',
+                'sale_conversion_rate' => 10,
+                'current_stock' => 150,
+                'alert_threshold' => 15,
+                'base_sale_price' => 1500,
+                'base_sale_margin_percentage' => 10,
+                'conversion_prices' => [
+                    ['unit' => 'carton', 'conversion_rate' => 10, 'sale_price' => 14000, 'sale_margin_percentage' => 8],
+                ],
+            ],
+            [
+                'name' => 'Thé Lipton 25 sachets',
+                'unit' => 'boite',
+                'sale_unit' => 'carton',
+                'sale_conversion_rate' => 24,
+                'current_stock' => 192,
+                'alert_threshold' => 20,
+                'base_sale_price' => 1100,
+                'base_sale_margin_percentage' => 15,
+                'conversion_prices' => [
+                    ['unit' => 'carton', 'conversion_rate' => 24, 'sale_price' => 25000, 'sale_margin_percentage' => 12],
+                ],
+            ],
+        ];
 
-    $products = [];
+        $products = [];
 
-    foreach ($productData as $data) {
-        $products[] = Product::firstOrCreate(
-            ['name' => $data['name']],
-            array_merge($data, [
-                'description' => 'Produit de consommation courante',
-                'is_active' => true,
-                'created_by' => $adminId,
-            ])
-        );
+        foreach ($productData as $data) {
+            $conversionPrices = $data['conversion_prices'] ?? [];
+            unset($data['conversion_prices']);
+
+            $product = Product::firstOrCreate(
+                ['name' => $data['name']],
+                array_merge($data, [
+                    'description' => 'Produit de consommation courante',
+                    'is_active' => true,
+                    'created_by' => $adminId,
+                ])
+            );
+
+            // Create unit conversion prices if product exists and conversions provided
+            if ($product->wasRecentlyCreated || $product->exists) {
+                foreach ($conversionPrices as $conversion) {
+                    ProductUnitConversion::firstOrCreate(
+                        [
+                            'product_id' => $product->id,
+                            'unit' => $conversion['unit'],
+                            'unit_type' => 'sale',
+                        ],
+                        [
+                            'conversion_rate' => $conversion['conversion_rate'],
+                            'sale_price' => $conversion['sale_price'],
+                            'sale_margin_percentage' => $conversion['sale_margin_percentage'],
+                            'minimum_price' => $conversion['sale_price'] * (1 - $conversion['sale_margin_percentage'] / 100),
+                        ]
+                    );
+                }
+            }
+
+            $products[] = $product;
+        }
+
+        return $products;
     }
-
-    return $products;
-}
 
     /**
      * Create realistic stock movements (entries and exits)
@@ -243,18 +319,31 @@ class DatabaseSeeder extends Seeder
                 for ($j = 0; $j < $itemCount; $j++) {
                     $product = $products[array_rand($products)];
                     $qty = rand(1, 5);
-                    $unitPrice = rand(500, 5000);
-                    $itemTotal = $qty * $unitPrice;
+
+                    // Determine unit to sell (base unit or sale unit)
+                    $unitSold = $product->sale_unit ?? $product->unit;
+                    $conversionRate = ($unitSold === $product->unit) ? 1 : ($product->sale_conversion_rate ?? 1);
+
+                    // Get price for the selected unit
+                    $unitPrice = $this->getUnitPriceForProduct($product, $unitSold);
+
+                    // Add small random variation to price (0-10% above minimum)
+                    $marginPercentage = $this->getMarginPercentageForUnit($product, $unitSold);
+                    $minPrice = $unitPrice * (1 - $marginPercentage / 100);
+                    $actualPrice = $minPrice + rand(0, (int)($unitPrice - $minPrice));
+                    $actualPrice = max($minPrice, min($actualPrice, $unitPrice * 1.2)); // Cap at 120% of sale price
+
+                    $itemTotal = $qty * $actualPrice;
                     $total += $itemTotal;
 
                     $items[] = [
                         'product_id' => $product->id,
                         'designation' => $product->name,
-                        'unit_sold' => $product->sale_unit ?? $product->unit,
+                        'unit_sold' => $unitSold,
                         'quantity_sold' => $qty,
-                        'quantity_deducted' => $qty * ($product->sale_conversion_rate ?? 1),
-                        'unit_price' => $unitPrice,
-                        'original_price' => $unitPrice,
+                        'quantity_deducted' => $qty * $conversionRate,
+                        'unit_price' => $actualPrice,
+                        'original_price' => $actualPrice,
                         'total_price' => $itemTotal,
                     ];
                 }
@@ -301,5 +390,56 @@ class DatabaseSeeder extends Seeder
                 }
             }
         }
+    }
+
+    /**
+     * Get the sale price for a specific unit (base unit or carton)
+     */
+    private function getUnitPriceForProduct(Product $product, string $unitSold): float
+    {
+        // Base unit price
+        if ($unitSold === $product->unit) {
+            return $product->base_sale_price ?? rand(500, 2000);
+        }
+
+        // Get conversion price
+        $conversion = $product->saleConversions()
+            ->where('unit', $unitSold)
+            ->whereNotNull('sale_price')
+            ->first();
+
+        if ($conversion) {
+            return $conversion->sale_price;
+        }
+
+        // Fallback: calculate from base price
+        if ($product->base_sale_price && $product->sale_conversion_rate) {
+            return $product->base_sale_price * $product->sale_conversion_rate;
+        }
+
+        return rand(5000, 30000); // Fallback random price
+    }
+
+    /**
+     * Get the margin percentage for a specific unit
+     */
+    private function getMarginPercentageForUnit(Product $product, string $unitSold): float
+    {
+        // Base unit margin
+        if ($unitSold === $product->unit) {
+            return $product->base_sale_margin_percentage ?? 10;
+        }
+
+        // Get conversion margin
+        $conversion = $product->saleConversions()
+            ->where('unit', $unitSold)
+            ->whereNotNull('sale_margin_percentage')
+            ->first();
+
+        if ($conversion) {
+            return $conversion->sale_margin_percentage;
+        }
+
+        return 10; // Default margin
     }
 }

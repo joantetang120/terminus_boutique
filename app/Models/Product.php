@@ -20,6 +20,8 @@ class Product extends Model
         'purchase_conversion_rate',
         'sale_unit',
         'sale_conversion_rate',
+        'base_sale_price',
+        'base_sale_margin_percentage',
         'current_stock',
         'alert_threshold',
         'is_active',
@@ -33,6 +35,8 @@ class Product extends Model
             'unit' => 'string',
             'purchase_conversion_rate' => 'integer',
             'sale_conversion_rate' => 'integer',
+            'base_sale_price' => 'decimal:2',
+            'base_sale_margin_percentage' => 'decimal:2',
             'current_stock' => 'integer',
             'alert_threshold' => 'integer',
         ];

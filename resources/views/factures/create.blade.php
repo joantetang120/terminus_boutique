@@ -46,7 +46,14 @@
                     <h3 style="font-size:1rem;font-weight:600;margin-bottom:16px;">Articles</h3>
 
                     <template x-for="(item, index) in items" :key="index">
-                        <div style="margin-bottom:16px; padding:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
+                        <div :style="{
+                            marginBottom: '16px',
+                            padding: '16px',
+                            background: item.hasPriceError ? '#fff5f5' : '#f8fafc',
+                            border: item.hasPriceError ? '2px solid #ef4444' : '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            transition: 'all 0.2s ease'
+                        }">
                             {{-- Row 1: Product selector and delete --}}
                             <div style="display:grid;grid-template-columns:1fr auto;gap:12px;margin-bottom:12px;align-items:end;">
                                 <div class="form-group" style="margin:0;">
@@ -77,6 +84,34 @@
                                 </div>
                             </div>
 
+                            {{-- Price info display for selected unit --}}
+                            <div x-show="item.unitPriceInfo.hasPrice" style="margin-bottom:12px;padding:10px 12px;background:#fefce8;border-radius:4px;border-left:3px solid #f59e0b;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.8125rem;flex-wrap:wrap;gap:8px;">
+                                    <span style="color:#92400e;font-weight:500;">
+                                        <span x-text="item.unitPriceInfo.unitLabel"></span>:
+                                    </span>
+                                    <div style="display:flex;gap:12px;align-items:center;">
+                                        <span style="color:#166534;">
+                                            Prix: <strong x-text="formatCurrency(item.unitPriceInfo.salePrice)"></strong>
+                                        </span>
+                                        <span x-show="item.unitPriceInfo.marginPercentage > 0" style="color:#7c3aed;">
+                                            Marge: <strong x-text="item.unitPriceInfo.marginPercentage + '%'"></strong>
+                                        </span>
+                                        <span style="color:#dc2626;font-weight:600;">
+                                            Min: <strong x-text="formatCurrency(item.unitPriceInfo.minimumPrice)"></strong>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Price error message --}}
+                            <div x-show="item.hasPriceError" style="margin-bottom:12px;padding:10px 12px;background:#fef2f2;border-radius:4px;border-left:3px solid #ef4444;">
+                                <div style="display:flex;align-items:center;gap:8px;font-size:0.8125rem;color:#dc2626;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <span x-text="'Prix trop bas ! Minimum requis: ' + formatCurrency(item.unitPriceInfo.minimumPrice)"></span>
+                                </div>
+                            </div>
+
                             {{-- Row 2: Unit, Quantity, Price --}}
                             <div style="display:grid;grid-template-columns:1fr 100px 120px;gap:12px;margin-bottom:12px;align-items:end;">
                                 <div class="form-group" style="margin:0;">
@@ -95,8 +130,16 @@
                                     <input class="form-input" type="number" :name="'items[' + index + '][quantity_sold]'" x-model.number="item.quantity_sold" @input="calculateDeduction(index)" min="0.01" step="0.01" required style="padding:8px 10px;font-size:0.8125rem;">
                                 </div>
                                 <div class="form-group" style="margin:0;">
-                                    <label class="form-label" style="font-size:0.75rem;">Prix unit.</label>
-                                    <input class="form-input" type="number" :name="'items[' + index + '][unit_price]'" x-model.number="item.unit_price" min="0" step="1" required style="padding:8px 10px;font-size:0.8125rem;">
+                                    <label class="form-label" style="font-size:0.75rem;">
+                                        Prix unit.
+                                        <span x-show="item.unitPriceInfo.hasPrice && item.unit_price < item.unitPriceInfo.minimumPrice" style="color:#ef4444;margin-left:4px;">⚠️</span>
+                                    </label>
+                                    <input class="form-input" type="number" :name="'items[' + index + '][unit_price]'" x-model.number="item.unit_price" @input="validatePrice(index)" min="0" step="1" required :style="{
+                                        padding: '8px 10px',
+                                        fontSize: '0.8125rem',
+                                        borderColor: item.hasPriceError ? '#ef4444' : '',
+                                        backgroundColor: item.hasPriceError ? '#fef2f2' : ''
+                                    }">
                                 </div>
                             </div>
 
@@ -152,9 +195,17 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary" style="width:100%;margin-top:20px;height:44px;">
+                    <button type="submit" class="btn btn-primary"
+                        :disabled="hasAnyPriceErrors()"
+                        :style="{
+                            width: '100%',
+                            marginTop: '20px',
+                            height: '44px',
+                            opacity: hasAnyPriceErrors() ? '0.5' : '1',
+                            cursor: hasAnyPriceErrors() ? 'not-allowed' : 'pointer'
+                        }">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:6px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        Enregistrer la facture
+                        <span x-text="hasAnyPriceErrors() ? 'Prix invalide détecté' : 'Enregistrer la facture'"></span>
                     </button>
                 </div>
             </div>
@@ -175,7 +226,9 @@
                 total_price: 0,
                 conversion_rate: 1,
                 quantity_deducted: 0,
-                productData: null
+                productData: null,
+                unitPriceInfo: { hasPrice: false, salePrice: 0, minimumPrice: 0, marginPercentage: 0, unitLabel: '' },
+                hasPriceError: false
             };
         }
 
@@ -227,7 +280,51 @@
                         item.conversion_rate = 1;
                     }
 
+                    // Update price info for the selected unit
+                    this.updatePriceInfo(index);
+
                     this.calculateDeduction(index);
+                    this.validatePrice(index);
+                },
+
+                updatePriceInfo(index) {
+                    const item = this.items[index];
+                    if (!item.productData || !item.unit_sold) {
+                        item.unitPriceInfo = { hasPrice: false, salePrice: 0, minimumPrice: 0, marginPercentage: 0, unitLabel: '' };
+                        return;
+                    }
+
+                    const product = item.productData;
+                    const priceData = product.unit_prices?.[item.unit_sold];
+
+                    if (priceData) {
+                        item.unitPriceInfo = {
+                            hasPrice: true,
+                            salePrice: priceData.sale_price,
+                            minimumPrice: priceData.minimum_price,
+                            marginPercentage: priceData.margin_percentage,
+                            unitLabel: item.unit_sold
+                        };
+                    } else {
+                        item.unitPriceInfo = { hasPrice: false, salePrice: 0, minimumPrice: 0, marginPercentage: 0, unitLabel: '' };
+                    }
+                },
+
+                validatePrice(index) {
+                    const item = this.items[index];
+                    if (!item.unitPriceInfo.hasPrice || !item.unit_price) {
+                        item.hasPriceError = false;
+                        return;
+                    }
+
+                    const enteredPrice = parseFloat(item.unit_price) || 0;
+                    const minimumPrice = item.unitPriceInfo.minimumPrice;
+
+                    item.hasPriceError = enteredPrice < minimumPrice;
+                },
+
+                hasAnyPriceErrors() {
+                    return this.items.some(item => item.hasPriceError);
                 },
 
                 calculateDeduction(index) {
