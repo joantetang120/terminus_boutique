@@ -25,11 +25,17 @@ class StoreProductRequest extends FormRequest
             'purchase_conversion_rate' => 'nullable|integer|min:1|required_with:purchase_unit',
             'sale_unit' => 'nullable|in:' . $validUnits . '|different:unit',
             'sale_conversion_rate' => 'nullable|integer|min:1|required_with:sale_unit',
+            
+            // Base unit pricing
+            'base_sale_price' => 'nullable|numeric|min:0',
+            'base_sale_margin_percentage' => 'nullable|numeric|min:0|max:100',
 
             // New multiple conversions
             'sale_conversions' => 'nullable|array',
             'sale_conversions.*.unit' => 'required_with:sale_conversions|in:' . $validUnits . '|different:unit',
             'sale_conversions.*.conversion_rate' => 'required_with:sale_conversions|integer|min:1',
+            'sale_conversions.*.sale_price' => 'nullable|numeric|min:0',
+            'sale_conversions.*.sale_margin_percentage' => 'nullable|numeric|min:0|max:100',
 
             'purchase_conversions' => 'nullable|array',
             'purchase_conversions.*.unit' => 'required_with:purchase_conversions|in:' . $validUnits . '|different:unit',

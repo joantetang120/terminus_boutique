@@ -85,8 +85,48 @@ class InvoiceRequest extends FormRequest
                         "Stock insuffisant pour {$product->name} : {$product->current_stock} disponibles, {$quantityDeducted} demandés"
                     );
                 }
+
+                // (3) Validate minimum price for the unit
+                $unitPrice = (float) ($item['unit_price'] ?? 0);
+                $minimumPrice = $this->getMinimumPriceForUnit($product, $unitSold);
+
+                if ($minimumPrice !== null && $unitPrice > 0 && $unitPrice < $minimumPrice) {
+                    $validator->errors()->add(
+                        "items.{$index}.unit_price",
+                        "Prix trop bas pour '{$product->name}' ({$unitSold}). Prix minimum: " . number_format($minimumPrice, 2) . " FCFA, Prix saisi: " . number_format($unitPrice, 2) . " FCFA"
+                    );
+                }
             }
         });
+    }
+
+    /**
+     * Get minimum price for a specific unit (base unit or conversion unit)
+     */
+    private function getMinimumPriceForUnit(Product $product, ?string $unitSold): ?float
+    {
+        if (!$unitSold) {
+            return null;
+        }
+
+        // Base unit price
+        if ($unitSold === $product->unit && $product->base_sale_price) {
+            $margin = $product->base_sale_margin_percentage ?? 0;
+            return $product->base_sale_price * (1 - $margin / 100);
+        }
+
+        // Check unit_conversions table for other units
+        $conversion = $product->unitConversions()
+            ->where('unit', $unitSold)
+            ->whereNotNull('sale_price')
+            ->first();
+
+        if ($conversion) {
+            $margin = $conversion->sale_margin_percentage ?? 0;
+            return $conversion->sale_price * (1 - $margin / 100);
+        }
+
+        return null;
     }
 
     /**

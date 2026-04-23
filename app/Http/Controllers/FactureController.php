@@ -66,11 +66,40 @@ class FactureController extends Controller
     public function create()
     {
         $products = Product::where('is_active', true)
-            ->with('unitConversions')
-            ->select('id', 'name', 'unit', 'sale_unit', 'purchase_unit', 'sale_conversion_rate', 'purchase_conversion_rate', 'current_stock', 'alert_threshold', 'is_active')
+            ->with(['unitConversions'])
+            ->select('id', 'name', 'unit', 'sale_unit', 'purchase_unit', 'sale_conversion_rate', 'purchase_conversion_rate',
+                     'base_sale_price', 'base_sale_margin_percentage', 'current_stock', 'alert_threshold', 'is_active')
             ->get()
             ->map(function ($product) {
                 $product->available_units = $product->getAvailableUnits();
+
+                // Build price map for each unit
+                $unitPrices = [];
+
+                // Base unit price
+                if ($product->base_sale_price) {
+                    $baseMinPrice = $product->base_sale_price * (1 - ($product->base_sale_margin_percentage ?? 0) / 100);
+                    $unitPrices[$product->unit] = [
+                        'sale_price' => (float) $product->base_sale_price,
+                        'margin_percentage' => (float) ($product->base_sale_margin_percentage ?? 0),
+                        'minimum_price' => (float) $baseMinPrice,
+                    ];
+                }
+
+                // Sale conversion prices
+                foreach ($product->unitConversions as $conversion) {
+                    if ($conversion->sale_price) {
+                        $minPrice = $conversion->sale_price * (1 - ($conversion->sale_margin_percentage ?? 0) / 100);
+                        $unitPrices[$conversion->unit] = [
+                            'sale_price' => (float) $conversion->sale_price,
+                            'margin_percentage' => (float) ($conversion->sale_margin_percentage ?? 0),
+                            'minimum_price' => (float) $minPrice,
+                        ];
+                    }
+                }
+
+                $product->unit_prices = $unitPrices;
+
                 return $product;
             });
         return view('factures.create', compact('products'));
