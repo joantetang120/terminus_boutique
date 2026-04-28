@@ -22,6 +22,7 @@ class StockController extends Controller
     {
         $products = Product::where('is_active', true)
             ->with('saleConversions')
+            ->select('id', 'name', 'unit', 'purchase_price', 'is_active')
             ->orderBy('name')
             ->get();
 
@@ -56,7 +57,9 @@ class StockController extends Controller
                 $validated['note'] ?? '',
                 Auth::user(),
                 $validated['input_unit'] ?? null,
-                $validated['quantity']
+                $validated['quantity'],
+                $validated['unit_cost'] ?? null,
+                $validated['total_cost'] ?? null
             );
 
             return back()->with('success', 'Entrée de stock enregistrée.');

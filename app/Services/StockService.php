@@ -13,6 +13,8 @@ class StockService
      * Record a stock entry (incoming)
      * @param string|null $inputUnit The unit entered by user (null = base unit)
      * @param int|null $inputQuantity The quantity entered by user (null = use $quantity)
+     * @param float|null $unitCost The purchase price per unit
+     * @param float|null $totalCost The total cost of the entry
      */
     public function recordEntry(
         Product $product, 
@@ -20,13 +22,20 @@ class StockService
         string $note, 
         User $by,
         ?string $inputUnit = null,
-        ?int $inputQuantity = null
+        ?int $inputQuantity = null,
+        ?float $unitCost = null,
+        ?float $totalCost = null
     ): StockMovement {
-        return DB::transaction(function () use ($product, $quantity, $note, $by, $inputUnit, $inputQuantity) {
+        return DB::transaction(function () use ($product, $quantity, $note, $by, $inputUnit, $inputQuantity, $unitCost, $totalCost) {
             // Convert to base unit if input unit is different
             $baseQuantity = $quantity;
             if ($inputUnit && $inputUnit !== $product->unit) {
                 $baseQuantity = $product->convertToBaseUnit($quantity, $inputUnit);
+            }
+
+            // Calculate total cost if not provided
+            if ($totalCost === null && $unitCost !== null) {
+                $totalCost = $unitCost * $quantity;
             }
 
             $movement = StockMovement::create([
@@ -35,6 +44,8 @@ class StockService
                 'quantity' => $baseQuantity,
                 'input_quantity' => $inputQuantity ?? $quantity,
                 'input_unit' => $inputUnit ?? $product->unit,
+                'unit_cost' => $unitCost,
+                'total_cost' => $totalCost,
                 'note' => $note,
                 'created_by' => $by->id,
             ]);
@@ -48,10 +59,12 @@ class StockService
                     'quantity' => $baseQuantity,
                     'input_quantity' => $inputQuantity ?? $quantity,
                     'input_unit' => $inputUnit ?? $product->unit,
+                    'unit_cost' => $unitCost,
+                    'total_cost' => $totalCost,
                     'stock_after' => $product->current_stock + $baseQuantity,
                     'movement_id' => $movement->id,
                 ])
-                ->log('Entrée stock: +' . ($inputQuantity ?? $quantity) . ' ' . ($inputUnit ?? $product->unit) . ' = ' . $baseQuantity . ' ' . $product->unit . ' de ' . $product->name);
+                ->log('Entrée stock: +' . ($inputQuantity ?? $quantity) . ' ' . ($inputUnit ?? $product->unit) . ' = ' . $baseQuantity . ' ' . $product->unit . ' de ' . $product->name . ($unitCost ? ' (Coût: ' . number_format($totalCost, 2) . ' FCFA)' : ''));
 
             return $movement;
         });

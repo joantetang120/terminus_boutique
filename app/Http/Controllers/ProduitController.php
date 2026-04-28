@@ -131,12 +131,17 @@ class ProduitController extends Controller
 
         // Create initial stock movement if stock > 0 (without incrementing since product already has the stock)
         if ($baseQuantity > 0) {
+            $unitCost = $product->purchase_price ?? 0;
+            $totalCost = $unitCost * $baseQuantity;
+
             \App\Models\StockMovement::create([
                 'product_id' => $product->id,
                 'type' => 'entry',
                 'quantity' => $baseQuantity,
                 'input_quantity' => $inputQuantity,
                 'input_unit' => $inputUnit ?? $baseUnit,
+                'unit_cost' => $unitCost,
+                'total_cost' => $totalCost,
                 'note' => 'Stock initial',
                 'created_by' => Auth::id(),
             ]);
@@ -155,8 +160,10 @@ class ProduitController extends Controller
                     'input_quantity' => $inputQuantity,
                     'input_unit' => $inputUnit ?? $baseUnit,
                     'unit' => $product->unit,
+                    'unit_cost' => $unitCost,
+                    'total_cost' => $totalCost,
                 ])
-                ->log($logMessage);
+                ->log($logMessage . ($unitCost > 0 ? ' (Coût: ' . number_format($totalCost, 2) . ' FCFA)' : ''));
         }
 
         activity('product')

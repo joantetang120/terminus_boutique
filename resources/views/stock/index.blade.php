@@ -75,6 +75,7 @@
                     <th>Produit</th>
                     <th>Type</th>
                     <th>Quantité</th>
+                    <th>Coût (FCFA)</th>
                     <th>Référence</th>
                     <th>Par</th>
                     <th>Actions</th>
@@ -108,6 +109,16 @@
                             {{ number_format($movement->quantity, 0, ',', ' ') }} (unité inconnue)
                         @endif
                     </td>
+                    <td>
+                        @if($movement->type === 'entry' && $movement->total_cost > 0)
+                            {{ number_format($movement->total_cost, 0, ',', ' ') }} FCFA
+                            @if($movement->unit_cost > 0)
+                                <small style="color:#64748B;">({{ number_format($movement->unit_cost, 0, ',', ' ') }}/{{ $movement->product->unit ?? 'unit' }})</small>
+                            @endif
+                        @else
+                            —
+                        @endif
+                    </td>
                     <td>{{ $movement->reference_type ? '#' . $movement->reference_id : '—' }}</td>
                     <td>{{ $movement->createdBy->name ?? '—' }}</td>
                     <td>
@@ -124,7 +135,7 @@
                 </tr>
                 @empty
                 <tr class="table-empty">
-                    <td colspan="7">Aucun mouvement.</td>
+                    <td colspan="8">Aucun mouvement.</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -155,23 +166,34 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="form-label" for="entry_product">Produit</label>
-                        <select class="form-select" id="entry_product" name="product_id" required onchange="updateEntryUnitOptions()">
+                        <select class="form-select" id="entry_product" name="product_id" required onchange="updateEntryUnitOptions(); updateEntryPurchasePriceHint({{ $product->id }});">
                             <option value="">Sélectionner...</option>
                             @foreach($products as $product)
-                            <option value="{{ $product->id }}" data-unit="{{ $product->unit }}" data-purchase-unit="{{ $product->purchase_unit }}" data-purchase-rate="{{ $product->purchase_conversion_rate }}">{{ $product->name }}</option>
+                            <option value="{{ $product->id }}" data-unit="{{ $product->unit }}" data-purchase-unit="{{ $product->purchase_unit }}" data-purchase-rate="{{ $product->purchase_conversion_rate }}" data-purchase-price="{{ $product->purchase_price }}">{{ $product->name }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;">
                         <div class="form-group">
                             <label class="form-label" for="entry_qty">Quantité</label>
-                            <input class="form-input" type="number" id="entry_qty" name="quantity" min="1" step="1" required>
+                            <input class="form-input" type="number" id="entry_qty" name="quantity" min="1" step="1" required onchange="calculateEntryCost()">
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="entry_unit">Unité</label>
                             <select class="form-select" id="entry_unit" name="input_unit" required>
                                 <option value="">--</option>
                             </select>
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div class="form-group">
+                            <label class="form-label" for="entry_unit_cost">Prix d'achat unitaire (FCFA)</label>
+                            <input class="form-input" type="number" id="entry_unit_cost" name="unit_cost" min="0" step="0.01" onchange="calculateEntryCost()">
+                            <small class="field-note" id="entry_purchase_price_hint" style="color:#64748B;">Prix par défaut: --</small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="entry_total_cost">Coût total (FCFA)</label>
+                            <input class="form-input" type="number" id="entry_total_cost" name="total_cost" min="0" step="0.01" readonly>
                         </div>
                     </div>
                     <div id="entry_conversion_info" style="display:none;padding:8px 12px;background:#F0FDF4;border:1px solid #86EFAC;border-radius:6px;margin-bottom:12px;font-size:0.75rem;color:#166534;">
@@ -317,6 +339,24 @@ function updateEntryUnitOptions() {
     } else {
         conversionInfo.style.display = 'none';
     }
+}
+
+function calculateEntryCost() {
+    const qty = parseFloat(document.getElementById('entry_qty').value) || 0;
+    const unitCost = parseFloat(document.getElementById('entry_unit_cost').value) || 0;
+    document.getElementById('entry_total_cost').value = (qty * unitCost).toFixed(2);
+}
+
+function updateEntryPurchasePriceHint(productId) {
+    const select = document.getElementById('entry_product');
+    const selected = select.options[select.selectedIndex];
+    const purchasePrice = selected?.dataset?.purchasePrice || '0';
+    document.getElementById('entry_unit_cost').value = purchasePrice;
+    const hint = document.getElementById('entry_purchase_price_hint');
+    if (hint) {
+        hint.textContent = 'Prix par défaut: ' + parseFloat(purchasePrice).toLocaleString('fr-FR') + ' FCFA';
+    }
+    calculateEntryCost();
 }
 
 function updateExitUnitOptions() {

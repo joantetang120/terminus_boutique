@@ -95,6 +95,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('comptabilite/modifications/{modification}/rejeter', [\App\Http\Controllers\ComptaController::class, 'rejeter'])
         ->name('compta.rejeter')->middleware('can:compta.approve');
 
+    // Comptabilité des factures (Invoice Accounting)
+    Route::get('comptabilite/factures', [\App\Http\Controllers\ComptaFactureController::class, 'index'])
+        ->name('comptabilite.factures.index')
+        ->middleware('can:compta.view');
+    Route::post('comptabilite/factures/paiement', [\App\Http\Controllers\ComptaFactureController::class, 'recordPayment'])
+        ->name('comptabilite.factures.payment')
+        ->middleware('can:facture.payment');
+
     // Utilisateurs
     Route::resource('utilisateurs', \App\Http\Controllers\UserController::class)->middleware('can:user.view');
     Route::patch('utilisateurs/{utilisateur}/toggle-status', [\App\Http\Controllers\UserController::class, 'toggleStatus'])
