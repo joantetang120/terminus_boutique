@@ -249,12 +249,16 @@ class DatabaseSeeder extends Seeder
 
         foreach ($products as $product) {
             // Initial stock entry
+            $initialStock = (int) ($product->current_stock * 0.6);
+            $purchasePrice = $product->purchase_price ?? 0;
             StockMovement::create([
                 'product_id' => $product->id,
                 'type' => 'entry',
-                'quantity' => (int) ($product->current_stock * 0.6),
+                'quantity' => $initialStock,
                 'reference_type' => null,
                 'reference_id' => null,
+                'unit_cost' => $purchasePrice,
+                'total_cost' => $purchasePrice * $initialStock,
                 'note' => 'Stock initial approvisionnement',
                 'created_by' => $adminId,
                 'created_at' => $startDate->copy()->addDays(rand(0, 7)),
@@ -262,12 +266,15 @@ class DatabaseSeeder extends Seeder
 
             // Restocking entries
             for ($i = 0; $i < 3; $i++) {
+                $restockQuantity = (int) ($product->current_stock * 0.2);
                 StockMovement::create([
                     'product_id' => $product->id,
                     'type' => 'entry',
-                    'quantity' => (int) ($product->current_stock * 0.2),
+                    'quantity' => $restockQuantity,
                     'reference_type' => null,
                     'reference_id' => null,
+                    'unit_cost' => $purchasePrice,
+                    'total_cost' => $purchasePrice * $restockQuantity,
                     'note' => 'Réapprovisionnement ' . ($i + 1),
                     'created_by' => $adminId,
                     'created_at' => $startDate->copy()->addDays(rand(30, 80)),
@@ -382,6 +389,8 @@ class DatabaseSeeder extends Seeder
                             'quantity' => $item['quantity_deducted'],
                             'reference_type' => Invoice::class,
                             'reference_id' => $invoice->id,
+                            'unit_cost' => 0,
+                            'total_cost' => 0,
                             'note' => 'Vente facture ' . $invoice->number,
                             'created_by' => $adminId,
                             'created_at' => $date,
