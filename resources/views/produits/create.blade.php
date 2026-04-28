@@ -695,6 +695,27 @@
                 </div>
 
                 <div class="card-body">
+                    {{-- Purchase Price --}}
+                    <div class="price-conversion-row" style="margin-bottom:24px;">
+                        <div class="price-conversion-header">
+                            <span class="price-unit-badge">Prix d'achat</span>
+                            <span class="price-conversion-rate">Prix de référence pour les entrées de stock</span>
+                        </div>
+                        <div class="price-fields">
+                            <div class="field-group">
+                                <label class="field-label">
+                                    Prix d'achat (FCFA)
+                                </label>
+                                <input type="number"
+                                    name="purchase_price"
+                                    value="{{ old('purchase_price', '') }}"
+                                    min="0"
+                                    step="0.01" class="styled-input price-input" placeholder="5000">
+                                <p class="field-note">Ce prix sera utilisé par défaut lors des entrées de stock</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="price-conversions-container">
                         @if (old('sale_conversions'))
                             @foreach (old('sale_conversions') as $index => $conversion)

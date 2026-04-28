@@ -18,6 +18,8 @@ class StockMovement extends Model
         'quantity',
         'input_quantity',
         'input_unit',
+        'unit_cost',
+        'total_cost',
         'reference_type',
         'reference_id',
         'note',
@@ -33,6 +35,8 @@ class StockMovement extends Model
             'type' => 'string',
             'quantity' => 'integer',
             'input_quantity' => 'integer',
+            'unit_cost' => 'decimal:2',
+            'total_cost' => 'decimal:2',
             'cancelled_at' => 'datetime',
         ];
     }
