@@ -18,6 +18,8 @@ class StockEntryRequest extends FormRequest
             'quantity' => 'required|integer|min:1',
             'input_unit' => 'nullable|string|in:carton,boite,paquet,piece,sceau,sacs,palettes',
             'note' => 'nullable|string|max:500',
+            'unit_cost' => 'nullable|numeric|min:0',
+            'total_cost' => 'nullable|numeric|min:0',
         ];
     }
 }

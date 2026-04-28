@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AccountingEntry;
 use App\Models\GhostInvoice;
 use App\Models\GhostInvoiceItem;
 use App\Models\Invoice;
@@ -280,7 +281,19 @@ class InvoiceService
                 'status' => $newStatus,
             ]);
 
-            // (6) Log to activity_log
+            // (6) Create accounting entry (recette)
+            AccountingEntry::create([
+                'type' => 'recette',
+                'amount' => $amount,
+                'date' => $data['payment_date'] ?? now()->format('Y-m-d'),
+                'reference_type' => 'invoice_payment',
+                'reference_id' => $invoice->id,
+                'description' => 'Paiement facture ' . $invoice->number . ' (' . ($data['payment_method'] ?? 'Espèces') . ')',
+                'status' => 'active',
+                'created_by' => $by->id,
+            ]);
+
+            // (7) Log to activity_log
             activity('invoice_payment')
                 ->performedOn($invoice)
                 ->causedBy($by)
