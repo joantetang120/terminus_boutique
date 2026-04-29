@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
+use App\Models\AccountingEntry;
 use App\Models\Product;
+use App\Models\StockMovement;
 use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -134,7 +136,7 @@ class ProduitController extends Controller
             $unitCost = $product->purchase_price ?? 0;
             $totalCost = $unitCost * $baseQuantity;
 
-            \App\Models\StockMovement::create([
+            $stockMovement = StockMovement::create([
                 'product_id' => $product->id,
                 'type' => 'entry',
                 'quantity' => $baseQuantity,
@@ -145,6 +147,20 @@ class ProduitController extends Controller
                 'note' => 'Stock initial',
                 'created_by' => Auth::id(),
             ]);
+
+            // Create accounting entry for expense if there's a cost
+            if ($totalCost > 0) {
+                AccountingEntry::create([
+                    'date' => now(),
+                    'type' => 'depense',
+                    'amount' => $totalCost,
+                    'reference_type' => StockMovement::class,
+                    'reference_id' => $stockMovement->id,
+                    'description' => 'Stock initial: ' . $inputQuantity . ' ' . ($inputUnit ?? $baseUnit) . ' de ' . $product->name . ' @ ' . number_format($unitCost, 0) . ' FCFA/' . ($inputUnit ?? $baseUnit),
+                    'status' => 'active',
+                    'created_by' => Auth::id(),
+                ]);
+            }
 
             $logMessage = 'Stock initial: ' . $inputQuantity . ' ' . ($inputUnit ?? $baseUnit);
             if ($inputUnit && $inputUnit !== $baseUnit) {

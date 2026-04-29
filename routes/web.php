@@ -103,6 +103,20 @@ Route::middleware(['auth'])->group(function () {
         ->name('comptabilite.factures.payment')
         ->middleware('can:facture.payment');
 
+    // Dépenses (Expenses) - Opérationnelles
+    Route::get('depenses', [\App\Http\Controllers\ExpenseController::class, 'index'])
+        ->name('expenses.index')
+        ->middleware('can:compta.view');
+    Route::post('depenses', [\App\Http\Controllers\ExpenseController::class, 'store'])
+        ->name('expenses.store')
+        ->middleware('can:compta.view');
+    Route::put('depenses/{expense}', [\App\Http\Controllers\ExpenseController::class, 'update'])
+        ->name('expenses.update')
+        ->middleware('can:compta.view');
+    Route::delete('depenses/{expense}', [\App\Http\Controllers\ExpenseController::class, 'destroy'])
+        ->name('expenses.destroy')
+        ->middleware('can:compta.approve');
+
     // Utilisateurs
     Route::resource('utilisateurs', \App\Http\Controllers\UserController::class)->middleware('can:user.view');
     Route::patch('utilisateurs/{utilisateur}/toggle-status', [\App\Http\Controllers\UserController::class, 'toggleStatus'])

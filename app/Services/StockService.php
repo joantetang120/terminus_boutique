@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AccountingEntry;
 use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\User;
@@ -51,6 +52,20 @@ class StockService
             ]);
 
             $product->increment('current_stock', $baseQuantity);
+
+            // Create accounting entry for expense if there's a cost
+            if ($totalCost && $totalCost > 0) {
+                AccountingEntry::create([
+                    'date' => now(),
+                    'type' => 'depense',
+                    'amount' => $totalCost,
+                    'reference_type' => StockMovement::class,
+                    'reference_id' => $movement->id,
+                    'description' => 'Achat stock: ' . ($inputQuantity ?? $quantity) . ' ' . ($inputUnit ?? $product->unit) . ' de ' . $product->name . ' @ ' . number_format($unitCost ?? 0, 0) . ' FCFA/' . ($inputUnit ?? $product->unit),
+                    'status' => 'active',
+                    'created_by' => $by->id,
+                ]);
+            }
 
             activity('stock')
                 ->performedOn($product)
