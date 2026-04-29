@@ -1685,11 +1685,11 @@
                 const unit = unitSelect.value || baseUnit;
                 const rate = rateInput.value || 1;
 
-                // Get existing values from old() or existing conversion data
-                const oldPrice =
-                    `{{ old('sale_conversions.${index}.sale_price', isset($produit->saleConversions[$index]) ? $produit->saleConversions[$index]->sale_price : '') }}`;
-                const oldMargin =
-                    `{{ old('sale_conversions.${index}.sale_margin_percentage', isset($produit->saleConversions[$index]) ? $produit->saleConversions[$index]->sale_margin_percentage : '') }}`;
+                // Get existing values from conversion data (passed from PHP to JS)
+                const saleConversions = @json($produit->saleConversions ?? []);
+                const existingConversion = saleConversions[index] || null;
+                const oldPrice = existingConversion?.sale_price ?? '';
+                const oldMargin = existingConversion?.sale_margin_percentage ?? '';
 
                 const priceRowHTML = `
                     <div class="price-conversion-row" data-index="${index}">
