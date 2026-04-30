@@ -110,18 +110,18 @@
                     </td>
                     <td style="padding:12px 16px;font-size:0.875rem;color:#64748b;">{{ $expense->createdBy?->name ?? 'N/A' }}</td>
                     <td style="padding:12px 16px;text-align:center;">
+                        @can('compta.edit')
                         <div style="display:flex;justify-content:center;align-items:center;gap:8px;">
-                            <button @click="openEditModal{{ $expense->id }} = true" style="background:none;border:none;cursor:pointer;padding:4px;color:#3b82f6;" title="Modifier">
+                            <button @click="$dispatch('open-edit-modal-{{ $expense->id }}')" style="background:none;border:none;cursor:pointer;padding:4px;color:#3b82f6;" title="Modifier">
                                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                             </button>
-                            <form action="{{ route('expenses.destroy', $expense) }}" method="POST" style="display:inline;" onsubmit="return confirm('Confirmer la suppression ?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" style="background:none;border:none;cursor:pointer;padding:4px;color:#dc2626;" title="Supprimer">
-                                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                </button>
-                            </form>
+                            <button @click="$dispatch('open-delete-modal-{{ $expense->id }}')" style="background:none;border:none;cursor:pointer;padding:4px;color:#dc2626;" title="Supprimer">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
                         </div>
+                        @else
+                        <span style="color:#94a3b8;">—</span>
+                        @endcan
                     </td>
                 </tr>
                 @empty
@@ -226,16 +226,15 @@
 
 {{-- Edit Modals --}}
 @foreach($expenses as $expense)
-<div x-data="{ openEditModal{{ $expense->id }}: false }"></div>
-<div x-show="openEditModal{{ $expense->id }}" style="display:none;position:fixed;inset:0;z-index:50;overflow-y:auto;" role="dialog" aria-modal="true">
+<div x-data="{ open: false, categoryType: {{ in_array($expense->category, $expenseCategories->pluck('name')->toArray()) ? "'existing'" : "'custom'" }}, customCategory: '{{ $expense->category }}', selectedCategory: '{{ $expense->category }}' }" @open-edit-modal-{{ $expense->id }}.window="open = true" x-show="open" style="display:none;position:fixed;inset:0;z-index:50;overflow-y:auto;" role="dialog" aria-modal="true">
     <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px;">
-        <div x-show="openEditModal{{ $expense->id }}"
+        <div x-show="open"
              x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
              x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
              style="position:fixed;inset:0;background:rgba(0,0,0,0.4);"
-             @click="openEditModal{{ $expense->id }} = false"></div>
+             @click="open = false"></div>
 
-        <div x-show="openEditModal{{ $expense->id }}"
+        <div x-show="open"
              x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
              x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
              style="position:relative;background:#fff;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,0.15);width:100%;max-width:480px;z-index:51;">
@@ -244,12 +243,12 @@
                 @method('PUT')
                 <div style="padding:20px 24px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
                     <h3 style="font-size:1.125rem;font-weight:600;color:#1e293b;margin:0;">Modifier la dépense</h3>
-                    <button type="button" @click="openEditModal{{ $expense->id }} = false" style="background:none;border:none;cursor:pointer;padding:4px;color:#64748b;">
+                    <button type="button" @click="open = false" style="background:none;border:none;cursor:pointer;padding:4px;color:#64748b;">
                         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
                 <div style="padding:20px 24px;">
-                    <div style="margin-bottom:16px;" x-data="{ categoryType: {{ in_array($expense->category, $expenseCategories->pluck('name')->toArray()) ? "'existing'" : "'custom'" }}, customCategory: '{{ $expense->category }}', selectedCategory: '{{ $expense->category }}' }">
+                    <div style="margin-bottom:16px;">
                         <label style="display:block;font-size:0.875rem;font-weight:500;color:#374151;margin-bottom:6px;">Catégorie <span style="color:#dc2626;">*</span></label>
                         <div style="display:flex;gap:8px;margin-bottom:8px;">
                             <button type="button"
@@ -304,8 +303,52 @@
                     </div>
                 </div>
                 <div style="padding:16px 24px;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:10px;">
-                    <button type="button" @click="openEditModal{{ $expense->id }} = false" style="padding:10px 16px;background:#e2e8f0;color:#475569;border:none;border-radius:6px;font-size:0.875rem;cursor:pointer;font-weight:500;">Annuler</button>
+                    <button type="button" @click="open = false" style="padding:10px 16px;background:#e2e8f0;color:#475569;border:none;border-radius:6px;font-size:0.875rem;cursor:pointer;font-weight:500;">Annuler</button>
                     <button type="submit" style="padding:10px 16px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:0.875rem;cursor:pointer;font-weight:500;">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endforeach
+
+{{-- Delete Confirmation Modals --}}
+@foreach($expenses as $expense)
+<div x-data="{ open: false }" @open-delete-modal-{{ $expense->id }}.window="open = true" x-show="open" style="display:none;position:fixed;inset:0;z-index:50;overflow-y:auto;" role="dialog" aria-modal="true">
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px;">
+        <div x-show="open"
+             x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+             style="position:fixed;inset:0;background:rgba(0,0,0,0.4);"
+             @click="open = false"></div>
+
+        <div x-show="open"
+             x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+             style="position:relative;background:#fff;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,0.15);width:100%;max-width:400px;z-index:51;">
+            <form action="{{ route('expenses.destroy', $expense) }}" method="POST">
+                @csrf
+                @method('DELETE')
+                <div style="padding:24px;text-align:center;">
+                    <div style="width:56px;height:56px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                        <svg width="28" height="28" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <h3 style="font-size:1.125rem;font-weight:600;color:#1e293b;margin:0 0 8px;">Confirmer la suppression</h3>
+                    <p style="font-size:0.875rem;color:#64748b;margin:0 0 8px;">
+                        Êtes-vous sûr de vouloir supprimer cette dépense ?
+                    </p>
+                    <div style="background:#f8fafc;border-radius:6px;padding:12px;margin-top:12px;text-align:left;">
+                        <div style="font-size:0.75rem;color:#94a3b8;margin-bottom:4px;">Catégorie</div>
+                        <div style="font-size:0.875rem;color:#374151;font-weight:500;">{{ $expense->category }}</div>
+                        <div style="font-size:0.75rem;color:#94a3b8;margin:8px 0 4px;">Libellé</div>
+                        <div style="font-size:0.875rem;color:#374151;font-weight:500;">{{ $expense->label }}</div>
+                        <div style="font-size:0.75rem;color:#94a3b8;margin:8px 0 4px;">Montant</div>
+                        <div style="font-size:0.875rem;color:#dc2626;font-weight:600;">{{ number_format($expense->amount, 0, ',', ' ') }} FCFA</div>
+                    </div>
+                </div>
+                <div style="padding:16px 24px;border-top:1px solid #e2e8f0;display:flex;justify-content:center;gap:12px;">
+                    <button type="button" @click="open = false" style="padding:10px 20px;background:#e2e8f0;color:#475569;border:none;border-radius:6px;font-size:0.875rem;cursor:pointer;font-weight:500;">Annuler</button>
+                    <button type="submit" style="padding:10px 20px;background:#dc2626;color:#fff;border:none;border-radius:6px;font-size:0.875rem;cursor:pointer;font-weight:500;">Supprimer</button>
                 </div>
             </form>
         </div>
