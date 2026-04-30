@@ -14,7 +14,7 @@
         </li>
     </ul>
 
-    @canany(['facture.view', 'ghost.view'])
+    @can('facture.view')
     <div class="sidebar-section-label" x-show="expanded" x-cloak>Ventes</div>
     <ul class="sidebar-nav">
         @can('facture.view')
@@ -26,17 +26,8 @@
             </a>
         </li>
         @endcan
-        @can('ghost.view')
-        <li>
-            <a href="{{ route('ghost.index') }}" class="{{ request()->routeIs('ghost.*') ? 'active' : '' }}"
-               :title="!expanded ? 'Factures Fantômes' : ''">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-                <span x-show="expanded" x-cloak>Factures Fantômes</span>
-            </a>
-        </li>
-        @endcan
     </ul>
-    @endcanany
+    @endcan
 
     @canany(['stock.view', 'product.view'])
     <div class="sidebar-section-label" x-show="expanded" x-cloak>Inventaire</div>
