@@ -43,14 +43,7 @@
            class="btn {{ $tab !== 'modifications' ? 'btn-primary' : 'btn-secondary' }}">
             Écritures
         </a>
-        <a href="{{ route('comptabilite.index', ['tab' => 'modifications']) }}" 
-           class="btn {{ $tab === 'modifications' ? 'btn-primary' : 'btn-secondary' }}">
-            Modifications en attente
-            @if($pendingCount > 0)
-            <span class="badge badge-danger" style="margin-left:4px;">{{ $pendingCount }}</span>
-            @endif
-        </a>
-        <button class="btn btn-secondary" x-data @click="$dispatch('open-entry-modal')">+ Nouvelle écriture</button>
+        {{-- <button class="btn btn-secondary" x-data @click="$dispatch('open-entry-modal')">+ Nouvelle écriture</button> --}}
     </div>
 
     @if($tab !== 'modifications')
@@ -107,11 +100,15 @@
                     <td>{{ $entry->createdBy->name ?? '—' }}</td>
                     <td>
                         @can('compta.edit')
+                        @if($entry->type === 'depense')
                         <button class="btn btn-secondary btn-sm" 
                                 x-data 
                                 @click="$dispatch('open-edit-entry', { id: {{ $entry->id }}, amount: {{ $entry->amount }}, description: '{{ addslashes($entry->description) }}' })">
                             Modifier
                         </button>
+                        @else
+                        <span style="color:#94a3b8;font-size:0.875rem;">—</span>
+                        @endif
                         @endcan
                     </td>
                 </tr>
