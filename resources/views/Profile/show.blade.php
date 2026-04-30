@@ -166,6 +166,15 @@
                                 @endif
                             </span>
                         </div>
+
+                        <div class="form-group" style="margin-top: 16px; margin-bottom: 0;">
+                            <a href="{{ route('ghost.password') }}" class="btn btn-secondary" style="background: #92400e; color: white; border-color: #92400e;">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 6px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                </svg>
+                                Accéder aux factures fantômes
+                            </a>
+                        </div>
                     </div>
                     @endif
 
