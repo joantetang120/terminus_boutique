@@ -49,9 +49,9 @@
         </div>
     </div>
 
-    <!-- Filters -->
+    <!-- Filters + Export -->
     <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin-bottom:24px;">
-        <form method="GET" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+        <form id="filter-form-depenses" method="GET" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
             <div style="display:flex;flex-direction:column;gap:4px;">
                 <label style="font-size:0.75rem;color:#64748b;font-weight:500;">Catégorie</label>
                 <select name="category" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:0.875rem;background:#fff;width:160px;">
@@ -74,6 +74,31 @@
                 <button type="submit" style="padding:8px 16px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:0.875rem;cursor:pointer;">Filtrer</button>
             </div>
         </form>
+
+        {{-- Bouton Export --}}
+        <div class="relative inline-block text-left" x-data="{ open: false }" style="margin-top:12px;">
+            <button @click="open = !open" type="button" class="btn-export-navy">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="white" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Exporter</span>
+                <svg class="ml-2 w-4 h-4" fill="none" stroke="white" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </button>
+            <div x-show="open" @click.away="open = false" x-transition class="export-dropdown-menu left-0">
+                <div class="py-1">
+                    <a href="javascript:void(0)" onclick="triggerExportDepenses('csv')" class="export-item">
+                        <span class="icon-csv">CSV</span> Format Excel (.csv)
+                    </a>
+                    <a href="javascript:void(0)" onclick="triggerExportDepenses('pdf')" class="export-item">
+                        <span class="icon-pdf">PDF</span> Format Document (.pdf)
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Expenses Table -->
@@ -355,5 +380,35 @@
     </div>
 </div>
 @endforeach
+
 </div>
+
+<style>
+    .btn-export-navy { background-color: #1e3a8a; color: #ffffff !important; padding: 8px 16px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; border: none; cursor: pointer; }
+    .export-dropdown-menu { position: absolute; left: 0; margin-top: 8px; min-width: 220px; background: white; border-radius: 10px; z-index: 9999; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); border: 1px solid #e5e7eb; }
+    .export-item { display: flex; align-items: center; padding: 10px 15px; font-size: 14px; color: #374151; text-decoration: none; }
+    .export-item:hover { background-color: #f3f4f6; color: #1e3a8a; }
+    .icon-csv { background: #dcfce7; color: #166534; font-size: 10px; padding: 2px 4px; border-radius: 4px; margin-right: 10px; font-weight: bold; }
+    .icon-pdf { background: #fee2e2; color: #991b1b; font-size: 10px; padding: 2px 4px; border-radius: 4px; margin-right: 10px; font-weight: bold; }
+</style>
+
+<script>
+function triggerExportDepenses(format) {
+    const filterForm = document.querySelector('#filter-form-depenses');
+    let params = new URLSearchParams();
+    if (filterForm) {
+        const formData = new FormData(filterForm);
+        params = new URLSearchParams(formData);
+    }
+    params.set('format', format);
+    params.set('source', 'depenses');
+    const url = "{{ route('reports.export') }}?" + params.toString();
+    if (format === 'pdf') {
+        window.location.href = "{{ route('reports.export.pdf') }}?" + params.toString();
+    } else {
+        window.location.href = url;
+    }
+}
+</script>
+
 </x-app-layout>

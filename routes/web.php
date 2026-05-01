@@ -5,7 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\ProfileController;
-
+use App\Http\Controllers\ReportController;
 // Auth
 Route::get('/', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/', [AuthController::class, 'login']);
@@ -136,6 +136,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile/verify', [ProfileController::class, 'verifyForm'])->name('profile.verify_form');
 
 Route::post('/profile/confirm-update', [ProfileController::class, 'confirmUpdate'])->name('profile.confirm_update');
-    
+
+// Report Export
+Route::get('/export-data', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/test-pdf', function () {
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML('<h1>Test PDF</h1><p>Ca marche !</p>');
+    return $pdf->download('test.pdf');
+});
+
+Route::get('/export-pdf', [\App\Http\Controllers\ReportController::class, 'exportPdf'])
+    ->name('reports.export.pdf')
+    ->middleware('can:compta.view');
 });
 
