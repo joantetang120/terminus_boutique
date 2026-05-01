@@ -91,7 +91,7 @@
 
         {{-- Table + Filters --}}
         <div class="table-wrapper">
-            <form method="GET" action="{{ route('comptabilite.factures.index') }}" class="table-toolbar" style="flex-wrap:wrap;gap:8px;">
+            <form id="filter-form-factures" method="GET" action="{{ route('comptabilite.factures.index') }}" class="table-toolbar" style="flex-wrap:wrap;gap:8px;">
                 <select name="status" class="form-select" style="width:130px;">
                     <option value="">Statut</option>
                     <option value="IMPAYEE"   {{ request('status') === 'IMPAYEE'   ? 'selected' : '' }}>Impayée</option>
@@ -115,6 +115,31 @@
                 <button type="submit" class="btn btn-secondary btn-sm">Filtrer</button>
             </form>
 
+            {{-- Bouton Export --}}
+            <div class="relative inline-block text-left" x-data="{ open: false }" style="margin-bottom:15px;">
+                <button @click="open = !open" type="button" class="btn-export-navy">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="white" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>Exporter</span>
+                    <svg class="ml-2 w-4 h-4" fill="none" stroke="white" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                <div x-show="open" @click.away="open = false" x-transition class="export-dropdown-menu left-0">
+                    <div class="py-1">
+                        <a href="javascript:void(0)" onclick="triggerExportFactures('csv')" class="export-item">
+                            <span class="icon-csv">CSV</span> Format Excel (.csv)
+                        </a>
+                        <a href="javascript:void(0)" onclick="triggerExportFactures('pdf')" class="export-item">
+                            <span class="icon-pdf">PDF</span> Format Document (.pdf)
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <table>
                 <thead>
                     <tr>
@@ -132,7 +157,6 @@
                 </thead>
                 <tbody>
                     @forelse($invoices as $invoice)
-                        {{-- Main row --}}
                         <tr id="invoice-row-{{ $invoice->id }}"
                             style="cursor:pointer;transition:background 0.15s;"
                             :style="updatedInvoiceId === {{ $invoice->id }} ? 'background:#F0FDF4;' : ''"
@@ -195,7 +219,6 @@
                                 </div>
                             </td>
                         </tr>
-                        {{-- Accordion: payment history --}}
                         <tr x-show="isExpanded({{ $invoice->id }})" style="display:none;" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                             <td colspan="10" style="padding:0;background:#F8FAFC;border-top:none;">
                                 <div style="margin:0 16px 12px 40px;background:#fff;border:1px solid #E2E8F0;border-radius:6px;overflow:hidden;">
@@ -262,7 +285,6 @@
                      x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
                      x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
                      style="position:fixed;inset:0;background:rgba(0,0,0,0.4);"></div>
-
                 <div x-show="showSuccessModal"
                      x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
                      x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
@@ -272,9 +294,7 @@
                     </div>
                     <div style="font-size:17px;font-weight:600;color:#1E293B;margin-bottom:6px;">Paiement enregistré !</div>
                     <div style="font-size:13px;color:#64748B;margin-bottom:20px;" x-text="successMessage"></div>
-                    <button @click="closeSuccessAndRefresh" class="btn btn-primary btn-sm" style="min-width:120px;">
-                        Fermer
-                    </button>
+                    <button @click="closeSuccessAndRefresh" class="btn btn-primary btn-sm" style="min-width:120px;">Fermer</button>
                 </div>
             </div>
         </div>
@@ -287,7 +307,6 @@
                      x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
                      style="position:fixed;inset:0;background:rgba(0,0,0,0.4);"
                      @click="showPaymentModal = false"></div>
-
                 <div x-show="showPaymentModal"
                      x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
                      x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
@@ -303,21 +322,17 @@
                             </div>
                         </div>
                     </div>
-
                     <form @submit.prevent="submitPayment" style="padding:20px 24px;">
                         <input type="hidden" x-model="paymentForm.invoice_id">
-
                         <div style="margin-bottom:16px;">
                             <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Montant (FCFA)</label>
                             <input type="number" x-model.number="paymentForm.amount" min="1" :max="selectedInvoiceBalance" required class="form-input" style="width:100%;">
                             <div x-show="paymentForm.amount > selectedInvoiceBalance" style="margin-top:4px;font-size:12px;color:#C0392B;">Le montant dépasse le solde restant.</div>
                         </div>
-
                         <div style="margin-bottom:16px;">
                             <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Date de paiement</label>
                             <input type="date" x-model="paymentForm.payment_date" required class="form-input" style="width:100%;">
                         </div>
-
                         <div style="margin-bottom:16px;">
                             <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Mode de paiement</label>
                             <select x-model="paymentForm.payment_method" required class="form-select" style="width:100%;">
@@ -329,18 +344,13 @@
                                 <option value="card">Carte bancaire</option>
                             </select>
                         </div>
-
                         <div style="margin-bottom:20px;">
                             <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Note <span style="font-weight:400;color:#94A3B8;">(optionnel)</span></label>
                             <textarea x-model="paymentForm.note" rows="2" class="form-input" style="width:100%;resize:vertical;" placeholder="Référence, nom du payeur..."></textarea>
                         </div>
-
                         <div x-show="paymentError" style="margin-bottom:16px;padding:10px 14px;background:#FEF2F2;border:1px solid #FCA5A5;border-radius:6px;font-size:13px;color:#991B1B;" x-text="paymentError"></div>
-
                         <div style="display:flex;justify-content:flex-end;gap:10px;">
-                            <button type="button" @click="showPaymentModal = false" class="btn btn-sm" style="background:#e2e8f0;color:#475569;">
-                                Annuler
-                            </button>
+                            <button type="button" @click="showPaymentModal = false" class="btn btn-sm" style="background:#e2e8f0;color:#475569;">Annuler</button>
                             <button type="submit" class="btn btn-primary btn-sm" :disabled="paymentForm.amount > selectedInvoiceBalance || paymentForm.amount <= 0 || submitting" style="min-width:120px;">
                                 <span x-show="!submitting">Enregistrer</span>
                                 <span x-show="submitting">Enregistrement...</span>
@@ -352,7 +362,33 @@
         </div>
     </div>
 
+    <style>
+        .btn-export-navy { background-color: #1e3a8a; color: #ffffff !important; padding: 8px 16px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; border: none; cursor: pointer; }
+        .export-dropdown-menu { position: absolute; left: 0; margin-top: 8px; min-width: 220px; background: white; border-radius: 10px; z-index: 9999; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); border: 1px solid #e5e7eb; }
+        .export-item { display: flex; align-items: center; padding: 10px 15px; font-size: 14px; color: #374151; text-decoration: none; }
+        .export-item:hover { background-color: #f3f4f6; color: #1e3a8a; }
+        .icon-csv { background: #dcfce7; color: #166534; font-size: 10px; padding: 2px 4px; border-radius: 4px; margin-right: 10px; font-weight: bold; }
+        .icon-pdf { background: #fee2e2; color: #991b1b; font-size: 10px; padding: 2px 4px; border-radius: 4px; margin-right: 10px; font-weight: bold; }
+    </style>
+
     <script>
+        function triggerExportFactures(format) {
+            const filterForm = document.querySelector('#filter-form-factures');
+            let params = new URLSearchParams();
+            if (filterForm) {
+                const formData = new FormData(filterForm);
+                params = new URLSearchParams(formData);
+            }
+            params.set('format', format);
+            params.set('source', 'factures');
+            const url = "{{ route('reports.export') }}?" + params.toString();
+            if (format === 'pdf') {
+                window.location.href = "{{ route('reports.export.pdf') }}?" + params.toString();
+            } else {
+                window.location.href = url;
+            }
+        }
+
         function invoiceAccounting() {
             return {
                 showPaymentModal: false,
@@ -399,7 +435,6 @@
                 async submitPayment() {
                     this.submitting = true;
                     this.paymentError = null;
-
                     try {
                         const response = await fetch('{{ route('comptabilite.factures.payment') }}', {
                             method: 'POST',
@@ -410,13 +445,9 @@
                             },
                             body: JSON.stringify(this.paymentForm)
                         });
-
                         const data = await response.json();
-
                         if (response.ok && data.success) {
                             this.showPaymentModal = false;
-
-                            // Build success message
                             const inv = data.invoice;
                             this.successMessage = 'Facture ' + inv.number + ' — ' + this.formatCurrency(inv.paid_amount) + ' payé / ' + this.formatCurrency(inv.total) + ' — Solde restant : ' + this.formatCurrency(inv.balance);
                             this.showSuccessModal = true;
@@ -432,21 +463,15 @@
                 },
 
                 updateInvoiceRow(invoice) {
-                    // Update status badge
                     const statusBadge = document.getElementById(`status-badge-${invoice.id}`);
                     if (statusBadge) {
                         statusBadge.textContent = invoice.status_label;
                         statusBadge.className = invoice.status_badge_class;
                     }
-
-                    // Update paid amount (column 5)
                     const row = document.getElementById(`invoice-row-${invoice.id}`);
                     if (row) {
                         const cells = row.getElementsByTagName('td');
-                        if (cells[5]) {
-                            cells[5].textContent = this.formatCurrency(invoice.paid_amount);
-                        }
-                        // Update balance using ID (column 6)
+                        if (cells[5]) cells[5].textContent = this.formatCurrency(invoice.paid_amount);
                         const balanceCell = document.getElementById(`balance-cell-${invoice.id}`);
                         if (balanceCell) {
                             balanceCell.textContent = this.formatCurrency(invoice.balance);
