@@ -13,7 +13,7 @@ class ReportExportService
     {
         $query = match($source) {
             'factures' => Invoice::query()->with(['payments']),
-            'depenses'  => Expense::query()->with(['category', 'user']),
+            'depenses'  => Expense::query()->with(['createdBy']),
             'ecritures' => AccountingEntry::query()->with('createdBy'),
         };
 
