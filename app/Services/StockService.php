@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AccountingEntry;
 use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\User;
@@ -52,6 +53,20 @@ class StockService
 
             $product->increment('current_stock', $baseQuantity);
 
+            // Create accounting entry for expense if there's a cost
+            if ($totalCost && $totalCost > 0) {
+                AccountingEntry::create([
+                    'date' => now(),
+                    'type' => 'depense',
+                    'amount' => $totalCost,
+                    'reference_type' => StockMovement::class,
+                    'reference_id' => $movement->id,
+                    'description' => 'Achat stock: ' . ($inputQuantity ?? $quantity) . ' ' . ($inputUnit ?? $product->unit) . ' de ' . $product->name . ' @ ' . number_format($unitCost ?? 0, 0) . ' FCFA/' . ($inputUnit ?? $product->unit),
+                    'status' => 'active',
+                    'created_by' => $by->id,
+                ]);
+            }
+
             activity('stock')
                 ->performedOn($product)
                 ->withProperties([
@@ -97,12 +112,18 @@ class StockService
                 throw new \Exception('Stock insuffisant. Disponible: ' . $availableInInputUnit . ' ' . ($inputUnit ?? $product->unit));
             }
 
+            // Calculate total cost for exit (COGS)
+            $unitCost = $product->purchase_price ?? 0;
+            $totalCost = $unitCost * $baseQuantity;
+
             $movement = StockMovement::create([
                 'product_id' => $product->id,
                 'type' => 'exit',
                 'quantity' => $baseQuantity,
                 'input_quantity' => $inputQuantity ?? $quantity,
                 'input_unit' => $inputUnit ?? $product->unit,
+                'unit_cost' => $unitCost,
+                'total_cost' => $totalCost,
                 'reference_type' => $refType,
                 'reference_id' => $refId,
                 'note' => $note,
@@ -163,6 +184,8 @@ class StockService
                 'quantity' => $movement->quantity,
                 'reference_type' => 'stock_movement',
                 'reference_id' => $movement->id,
+                'unit_cost' => 0,
+                'total_cost' => 0,
                 'note' => 'Annulation du mouvement #' . $movement->id . ': ' . $reason,
                 'created_by' => $by->id,
             ]);

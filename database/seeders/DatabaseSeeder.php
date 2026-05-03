@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\AccountingEntry;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Product;
@@ -49,6 +50,9 @@ class DatabaseSeeder extends Seeder
             ]
         );
         $admin->givePermissionTo(Permission::all());
+
+        // Create expense categories
+        $this->createExpenseCategories();
 
         // Create realistic products with proper names and units
         $products = $this->createRealisticProducts($admin->id);
@@ -251,7 +255,7 @@ class DatabaseSeeder extends Seeder
             // Initial stock entry
             $initialStock = (int) ($product->current_stock * 0.6);
             $purchasePrice = $product->purchase_price ?? 0;
-            StockMovement::create([
+            $initialMovement = StockMovement::create([
                 'product_id' => $product->id,
                 'type' => 'entry',
                 'quantity' => $initialStock,
@@ -264,10 +268,24 @@ class DatabaseSeeder extends Seeder
                 'created_at' => $startDate->copy()->addDays(rand(0, 7)),
             ]);
 
+            // Create accounting entry for initial stock if there's a cost
+            if ($purchasePrice > 0) {
+                AccountingEntry::create([
+                    'date' => $startDate->copy()->addDays(rand(0, 7)),
+                    'type' => 'depense',
+                    'amount' => $purchasePrice * $initialStock,
+                    'reference_type' => StockMovement::class,
+                    'reference_id' => $initialMovement->id,
+                    'description' => 'Stock initial: ' . $initialStock . ' ' . $product->unit . ' de ' . $product->name . ' @ ' . number_format($purchasePrice, 0) . ' FCFA/' . $product->unit,
+                    'status' => 'active',
+                    'created_by' => $adminId,
+                ]);
+            }
+
             // Restocking entries
             for ($i = 0; $i < 3; $i++) {
                 $restockQuantity = (int) ($product->current_stock * 0.2);
-                StockMovement::create([
+                $restockMovement = StockMovement::create([
                     'product_id' => $product->id,
                     'type' => 'entry',
                     'quantity' => $restockQuantity,
@@ -279,6 +297,20 @@ class DatabaseSeeder extends Seeder
                     'created_by' => $adminId,
                     'created_at' => $startDate->copy()->addDays(rand(30, 80)),
                 ]);
+
+                // Create accounting entry for restocking if there's a cost
+                if ($purchasePrice > 0) {
+                    AccountingEntry::create([
+                        'date' => $startDate->copy()->addDays(rand(30, 80)),
+                        'type' => 'depense',
+                        'amount' => $purchasePrice * $restockQuantity,
+                        'reference_type' => StockMovement::class,
+                        'reference_id' => $restockMovement->id,
+                        'description' => 'Réapprovisionnement: ' . $restockQuantity . ' ' . $product->unit . ' de ' . $product->name . ' @ ' . number_format($purchasePrice, 0) . ' FCFA/' . $product->unit,
+                        'status' => 'active',
+                        'created_by' => $adminId,
+                    ]);
+                }
             }
         }
     }
@@ -450,5 +482,37 @@ class DatabaseSeeder extends Seeder
         }
 
         return 10; // Default margin
+    }
+
+    /**
+     * Create predefined expense categories
+     */
+    private function createExpenseCategories(): void
+    {
+        $categories = [
+            'Loyer',
+            'Salaires',
+            'Électricité',
+            'Eau',
+            'Transport',
+            'Télécommunications',
+            'Fournitures de bureau',
+            'Maintenance',
+            'Marketing',
+            'Assurances',
+            'Impôts',
+            'Frais bancaires',
+            'Repas',
+            'Personnel',
+            'Formation',
+            'Divers',
+        ];
+
+        foreach ($categories as $category) {
+            \App\Models\ExpenseCategory::firstOrCreate(
+                ['name' => $category],
+                ['is_active' => true]
+            );
+        }
     }
 }

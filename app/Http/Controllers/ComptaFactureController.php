@@ -22,7 +22,7 @@ class ComptaFactureController extends Controller
     public function index(Request $request)
     {
         // Check permission
-        if (!Auth::user()->can('compta.view')) {
+        if (!Auth::user()->can('facture.view')) {
             abort(403, 'Accès refusé.');
         }
 
@@ -101,13 +101,13 @@ class ComptaFactureController extends Controller
 
     /**
      * Record a payment for an invoice
-     * Protected by facture.payment permission
+     * Protected by compta.create permission
      * Returns updated invoice data for Alpine.js refresh
      */
     public function recordPayment(Request $request)
     {
         // Check permission
-        if (!Auth::user()->can('facture.payment')) {
+        if (!Auth::user()->can('compta.create')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Permission refusée.',
