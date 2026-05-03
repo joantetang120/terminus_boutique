@@ -23,6 +23,7 @@ class ExpenseCategoriesSeeder extends Seeder
             'Impôts',
             'Frais bancaires',
             'Repas',
+            'Personnel',
             'Formation',
             'Divers',
         ];

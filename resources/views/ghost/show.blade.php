@@ -39,6 +39,16 @@
                         <span style="background: #ed8936; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase;">Archive</span>
                     </div>
 
+                    {{-- Bouton d'impression --}}
+                    <a href="{{ route('ghost.print', $ghostInvoice) }}" target="_blank" class="btn btn-sm" style="background: #4a5568; color: white; border: none; padding: 8px 16px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-size: 13px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <rect x="6" y="14" width="12" height="8"></rect>
+                        </svg>
+                        Imprimer PDF
+                    </a>
+
                     {{-- Indicateur ANNULEE si applicable --}}
                     @if($realInvoiceCancelled)
                         <div style="display: flex; align-items: center; gap: 8px; background: #fed7d7; color: #c53030; padding: 12px 20px; border-radius: 8px; border-left: 4px solid #fc8181;">

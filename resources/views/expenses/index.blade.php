@@ -206,7 +206,7 @@
                                 x-model="selectedCategory"
                                 @change="customCategory = selectedCategory"
                                 name="category"
-                                required
+                                :required="categoryType === 'existing'"
                                 style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:0.875rem;background:#fff;">
                             <option value="">Sélectionner une catégorie...</option>
                             @foreach($expenseCategories as $cat)
@@ -217,7 +217,7 @@
                                x-model="customCategory"
                                type="text"
                                name="category"
-                               required
+                               :required="categoryType === 'custom'"
                                placeholder="Saisir une nouvelle catégorie..."
                                style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:0.875rem;background:#fff;">
                     </div>
@@ -293,7 +293,7 @@
                                 x-model="selectedCategory"
                                 @change="customCategory = selectedCategory"
                                 name="category"
-                                required
+                                :required="categoryType === 'existing'"
                                 style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:0.875rem;background:#fff;">
                             <option value="">Sélectionner une catégorie...</option>
                             @foreach($expenseCategories as $cat)
@@ -304,7 +304,7 @@
                                x-model="customCategory"
                                type="text"
                                name="category"
-                               required
+                               :required="categoryType === 'custom'"
                                placeholder="Saisir une nouvelle catégorie..."
                                style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:0.875rem;background:#fff;">
                     </div>
