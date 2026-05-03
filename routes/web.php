@@ -83,6 +83,8 @@ Route::middleware(['auth'])->group(function () {
                 ->name('ghost.index');
             Route::get('/{ghostInvoice}', [\App\Http\Controllers\GhostInvoiceController::class, 'show'])
                 ->name('ghost.show');
+            Route::get('/{ghostInvoice}/print', [\App\Http\Controllers\GhostInvoiceController::class, 'print'])
+                ->name('ghost.print');
         });
     });
 

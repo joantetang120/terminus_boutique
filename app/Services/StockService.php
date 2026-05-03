@@ -112,12 +112,18 @@ class StockService
                 throw new \Exception('Stock insuffisant. Disponible: ' . $availableInInputUnit . ' ' . ($inputUnit ?? $product->unit));
             }
 
+            // Calculate total cost for exit (COGS)
+            $unitCost = $product->purchase_price ?? 0;
+            $totalCost = $unitCost * $baseQuantity;
+
             $movement = StockMovement::create([
                 'product_id' => $product->id,
                 'type' => 'exit',
                 'quantity' => $baseQuantity,
                 'input_quantity' => $inputQuantity ?? $quantity,
                 'input_unit' => $inputUnit ?? $product->unit,
+                'unit_cost' => $unitCost,
+                'total_cost' => $totalCost,
                 'reference_type' => $refType,
                 'reference_id' => $refId,
                 'note' => $note,
@@ -178,6 +184,8 @@ class StockService
                 'quantity' => $movement->quantity,
                 'reference_type' => 'stock_movement',
                 'reference_id' => $movement->id,
+                'unit_cost' => 0,
+                'total_cost' => 0,
                 'note' => 'Annulation du mouvement #' . $movement->id . ': ' . $reason,
                 'created_by' => $by->id,
             ]);

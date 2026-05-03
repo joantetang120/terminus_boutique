@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class GhostInvoiceController extends Controller
 {
@@ -160,5 +161,39 @@ class GhostInvoiceController extends Controller
             ->log('Consultation détail fantôme: ' . $ghostInvoice->number . ' (' . $ghostInvoice->client_name . ') par ' . Auth::user()->name);
 
         return view('ghost.show', compact('ghostInvoice', 'realInvoiceCancelled', 'realInvoice'));
+    }
+
+    /**
+     * Generate and download PDF of the ghost invoice
+     */
+    public function print(GhostInvoice $ghostInvoice)
+    {
+        $this->authorize('ghost.view');
+
+        $ghostInvoice->load(['items', 'createdBy']);
+
+        $pdf = Pdf::loadView('pdf.ghost-invoice', [
+            'invoice' => $ghostInvoice,
+        ]);
+
+        // Set paper size for 80mm thermal receipt printer format
+        // Width: 80mm (226.77 points), Height: auto based on content
+        $pdf->setPaper([0, 0, 226.77, 600], 'portrait');
+        $pdf->setOptions(['defaultFont' => 'Courier']);
+
+        // Log the print action
+        activity('ghost.print')
+            ->performedOn($ghostInvoice)
+            ->causedBy(Auth::user())
+            ->withProperties([
+                'ghost_invoice_number' => $ghostInvoice->number,
+                'client_name' => $ghostInvoice->client_name,
+            ])
+            ->log('Impression facture fantôme: ' . $ghostInvoice->number . ' par ' . Auth::user()->name);
+
+        return response($pdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $ghostInvoice->number . '.pdf"',
+        ]);
     }
 }
