@@ -22,7 +22,7 @@ class StockController extends Controller
     {
         $products = Product::where('is_active', true)
             ->with('saleConversions')
-            ->select('id', 'name', 'unit', 'purchase_price', 'is_active')
+            ->select('id', 'name', 'unit', 'purchase_price', 'current_stock', 'alert_threshold', 'is_active')
             ->orderBy('name')
             ->get();
 
