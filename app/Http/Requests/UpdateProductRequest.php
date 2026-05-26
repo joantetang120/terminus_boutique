@@ -18,10 +18,10 @@ class UpdateProductRequest extends FormRequest
         return [
             'name' => 'required|string|max:255|unique:products,name,' . $productId,
             'description' => 'nullable|string',
-            'unit' => 'required|in:carton,boite,paquet,piece,sceau,sacs,palettes',
-            'purchase_unit' => 'nullable|in:carton,boite,paquet,piece,sceau,sacs,palettes',
+            'unit' => 'required|in:carton,boite,paquet,piece,sceau,sacs,palettes,filet',
+            'purchase_unit' => 'nullable|in:carton,boite,paquet,piece,sceau,sacs,palettes,filet',
             'purchase_conversion_rate' => 'nullable|integer|min:1|required_with:purchase_unit',
-            'sale_unit' => 'nullable|in:carton,boite,paquet,piece,sceau,sacs,palettes|different:unit',
+            'sale_unit' => 'nullable|in:carton,boite,paquet,piece,sceau,sacs,palettes,filet|different:unit',
             'sale_conversion_rate' => 'nullable|integer|min:1|required_with:sale_unit',
             
             // Base unit pricing
@@ -30,7 +30,7 @@ class UpdateProductRequest extends FormRequest
             'purchase_price' => 'nullable|numeric|min:0',
 
             'sale_conversions' => 'nullable|array',
-            'sale_conversions.*.unit' => 'required_with:sale_conversions|in:carton,boite,paquet,piece,sceau,sacs,palettes|different:unit',
+            'sale_conversions.*.unit' => 'required_with:sale_conversions|in:carton,boite,paquet,piece,sceau,sacs,palettes,filet|different:unit',
             'sale_conversions.*.conversion_rate' => 'required_with:sale_conversions|integer|min:1',
             'sale_conversions.*.sale_price' => 'nullable|numeric|min:0',
             'sale_conversions.*.sale_margin_percentage' => 'nullable|numeric|min:0|max:100',
