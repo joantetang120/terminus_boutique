@@ -197,6 +197,8 @@
                                     </option>
                                     <option value="palettes" {{ old('unit') === 'palettes' ? 'selected' : '' }}>
                                         Palettes</option>
+                                    <option value="filet" {{ old('unit') === 'filet' ? 'selected' : '' }}>
+                                        Filet</option>
                                 </select>
                             </div>
                             <p class="field-note">
@@ -278,6 +280,9 @@
                                             <option value="palettes"
                                                 {{ old('purchase_unit') === 'palettes' ? 'selected' : '' }}>Palettes
                                             </option>
+                                            <option value="filet"
+                                                {{ old('purchase_unit') === 'filet' ? 'selected' : '' }}>Filet
+                                            </option>
                                         </select>
                                     </div>
                                 </div>
@@ -339,6 +344,9 @@
                                                             <option value="palettes"
                                                                 {{ $conversion['unit'] === 'palettes' ? 'selected' : '' }}>
                                                                 Palettes</option>
+                                                            <option value="filet"
+                                                                {{ $conversion['unit'] === 'filet' ? 'selected' : '' }}>
+                                                                Filet</option>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -502,6 +510,9 @@
                                             {{ old('initial_stock_unit') === 'sacs' ? 'selected' : '' }}>sacs</option>
                                         <option value="palettes"
                                             {{ old('initial_stock_unit') === 'palettes' ? 'selected' : '' }}>palettes
+                                        </option>
+                                        <option value="filet"
+                                            {{ old('initial_stock_unit') === 'filet' ? 'selected' : '' }}>filet
                                         </option>
                                     </select>
                                 </div>
@@ -706,11 +717,9 @@
                                 <label class="field-label">
                                     Prix d'achat (FCFA)
                                 </label>
-                                <input type="number"
-                                    name="purchase_price"
-                                    value="{{ old('purchase_price', '') }}"
-                                    min="0"
-                                    step="0.01" class="styled-input price-input" placeholder="5000">
+                                <input type="number" name="purchase_price" value="{{ old('purchase_price', '') }}"
+                                    min="0" step="0.01" class="styled-input price-input"
+                                    placeholder="5000">
                                 <p class="field-note">Ce prix sera utilisé par défaut lors des entrées de stock</p>
                             </div>
                         </div>
@@ -1905,6 +1914,7 @@
                         <option value="sceau">Sceau</option>
                         <option value="sacs">Sacs</option>
                         <option value="palettes">Palettes</option>
+                        <option value="filet">Filet</option>
                     </select>
                 </div>
             </div>

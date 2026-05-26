@@ -204,6 +204,9 @@
                                     <option value="palettes"
                                         {{ old('unit', $produit->unit) === 'palettes' ? 'selected' : '' }}>Palettes
                                     </option>
+                                    <option value="filet"
+                                        {{ old('unit', $produit->unit) === 'filet' ? 'selected' : '' }}>Filet
+                                    </option>
                                 </select>
                             </div>
                             <p class="field-note warning">
@@ -289,6 +292,9 @@
                                             <option value="palettes"
                                                 {{ old('purchase_unit', $produit->purchase_unit) === 'palettes' ? 'selected' : '' }}>
                                                 Palettes</option>
+                                            <option value="filet"
+                                                {{ old('purchase_unit', $produit->purchase_unit) === 'filet' ? 'selected' : '' }}>
+                                                Filet</option>
                                         </select>
                                     </div>
                                 </div>
@@ -350,6 +356,9 @@
                                                             <option value="palettes"
                                                                 {{ $conversion['unit'] === 'palettes' ? 'selected' : '' }}>
                                                                 Palettes</option>
+                                                            <option value="filet"
+                                                                {{ $conversion['unit'] === 'filet' ? 'selected' : '' }}>
+                                                                Filet</option>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -413,6 +422,9 @@
                                                             <option value="palettes"
                                                                 {{ $conversion->unit === 'palettes' ? 'selected' : '' }}>
                                                                 Palettes</option>
+                                                            <option value="filet"
+                                                                {{ $conversion->unit === 'filet' ? 'selected' : '' }}>
+                                                                Filet</option>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -476,6 +488,9 @@
                                                             <option value="palettes"
                                                                 {{ $produit->sale_unit === 'palettes' ? 'selected' : '' }}>
                                                                 Palettes</option>
+                                                            <option value="filet"
+                                                                {{ $produit->sale_unit === 'filet' ? 'selected' : '' }}>
+                                                                Filet</option>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -748,7 +763,8 @@
 
                 <div class="card-body">
                     {{-- Base Unit Price Section --}}
-                    <div class="base-unit-price-section" style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #e2e8f0;">
+                    <div class="price-conversion-row base-unit-price-section" data-index="base"
+                        style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #e2e8f0;">
                         <div class="price-conversion-header" style="margin-bottom: 16px;">
                             <span class="price-unit-badge" style="background: #1B3A6B;">{{ $produit->unit }}</span>
                             <span class="price-conversion-rate">Unité de base</span>
@@ -759,25 +775,19 @@
                                     Prix de vente unitaire (FCFA)
                                     <span class="required-dot" title="Requis"></span>
                                 </label>
-                                <input type="number"
-                                    name="base_sale_price"
-                                    value="{{ old('base_sale_price', $produit->base_sale_price) }}"
-                                    min="0" step="0.01"
-                                    class="styled-input price-input"
-                                    placeholder="10000"
+                                <input type="number" name="base_sale_price"
+                                    value="{{ old('base_sale_price', $produit->base_sale_price) }}" min="0"
+                                    step="0.01" class="styled-input price-input" placeholder="10000"
                                     oninput="calculateMinimumPrice(this)">
                             </div>
                             <div class="field-group">
                                 <label class="field-label">
                                     Marge de réduction (%)
                                 </label>
-                                <input type="number"
-                                    name="base_sale_margin_percentage"
+                                <input type="number" name="base_sale_margin_percentage"
                                     value="{{ old('base_sale_margin_percentage', $produit->base_sale_margin_percentage) }}"
-                                    min="0" max="100" step="0.01"
-                                    class="styled-input margin-input"
-                                    placeholder="5"
-                                    oninput="calculateMinimumPrice(this)">
+                                    min="0" max="100" step="0.01" class="styled-input margin-input"
+                                    placeholder="5" oninput="calculateMinimumPrice(this)">
                                 <p class="field-note">Pourcentage maximum de réduction autorisé</p>
                             </div>
                             <div class="minimum-price-display">
@@ -785,7 +795,9 @@
                                 <span class="minimum-price-value" id="min-price-base">
                                     @php
                                         $basePrice = old('base_sale_price', $produit->base_sale_price) ?? 0;
-                                        $baseMargin = old('base_sale_margin_percentage', $produit->base_sale_margin_percentage) ?? 0;
+                                        $baseMargin =
+                                            old('base_sale_margin_percentage', $produit->base_sale_margin_percentage) ??
+                                            0;
                                         $minPrice = $basePrice * (1 - $baseMargin / 100);
                                         echo number_format($minPrice, 2) . ' FCFA';
                                     @endphp
@@ -805,10 +817,8 @@
                                 <label class="field-label">
                                     Prix d'achat (FCFA)
                                 </label>
-                                <input type="number"
-                                    name="purchase_price"
-                                    value="{{ old('purchase_price', $produit->purchase_price) }}"
-                                    min="0"
+                                <input type="number" name="purchase_price"
+                                    value="{{ old('purchase_price', $produit->purchase_price) }}" min="0"
                                     step="0.01" class="styled-input price-input" placeholder="5000">
                                 <p class="field-note">Ce prix sera utilisé par défaut lors des entrées de stock</p>
                             </div>
@@ -821,7 +831,8 @@
                                 <div class="price-conversion-row" data-index="{{ $index }}">
                                     <div class="price-conversion-header">
                                         <span class="price-unit-badge">{{ $conversion['unit'] }}</span>
-                                        <span class="price-conversion-rate">1 {{ $conversion['unit'] }} = {{ $conversion['conversion_rate'] }} {{ $produit->unit }}</span>
+                                        <span class="price-conversion-rate">1 {{ $conversion['unit'] }} =
+                                            {{ $conversion['conversion_rate'] }} {{ $produit->unit }}</span>
                                     </div>
                                     <div class="price-fields">
                                         <div class="field-group">
@@ -1774,6 +1785,15 @@
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('unit').addEventListener('change', updateUnitLabels);
+
+            // Initialize base unit price calculation
+            const basePriceInput = document.querySelector('input[name="base_sale_price"]');
+            const baseMarginInput = document.querySelector('input[name="base_sale_margin_percentage"]');
+            if (basePriceInput && basePriceInput.value) {
+                calculateMinimumPrice(basePriceInput);
+            } else if (baseMarginInput && baseMarginInput.value) {
+                calculateMinimumPrice(baseMarginInput);
+            }
         });
     </script>
 
@@ -1795,16 +1815,16 @@
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn-secondary" id="modalCancel">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M18 6 6 18" />
                         <path d="m6 6 12 12" />
                     </svg>
                     <span>Rester</span>
                 </button>
                 <a href="{{ route('produits.index') }}" class="btn-danger" id="modalConfirm">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 14 4 9l5-5" />
                         <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />
                     </svg>
@@ -1882,6 +1902,7 @@
                         <option value="sceau">Sceau</option>
                         <option value="sacs">Sacs</option>
                         <option value="palettes">Palettes</option>
+                        <option value="filet">Filet</option>
                     </select>
                 </div>
             </div>
