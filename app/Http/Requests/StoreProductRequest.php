@@ -13,7 +13,7 @@ class StoreProductRequest extends FormRequest
 
     public function rules(): array
     {
-        $validUnits = 'carton,boite,paquet,piece,sceau,sacs,palettes';
+        $validUnits = 'carton,boite,paquet,piece,sceau,sacs,palettes,filet';
 
         return [
             'name' => 'required|string|max:255|unique:products,name',

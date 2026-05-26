@@ -13,10 +13,10 @@ return new class extends Migration
     public function up(): void
     {
         // Update unit column ENUM to include all valid values
-        DB::statement("ALTER TABLE products MODIFY COLUMN unit ENUM('carton', 'boite', 'paquet', 'piece', 'sceau', 'sacs', 'palettes') NOT NULL");
+        DB::statement("ALTER TABLE products MODIFY COLUMN unit ENUM('carton', 'boite', 'paquet', 'piece', 'sceau', 'sacs', 'palettes', 'filet') NOT NULL");
 
         // Update purchase_unit column ENUM to include all valid values
-        DB::statement("ALTER TABLE products MODIFY COLUMN purchase_unit ENUM('carton', 'boite', 'paquet', 'piece', 'sceau', 'sacs', 'palettes') NULL");
+        DB::statement("ALTER TABLE products MODIFY COLUMN purchase_unit ENUM('carton', 'boite', 'paquet', 'piece', 'sceau', 'sacs', 'palettes', 'filet') NULL");
     }
 
     /**
