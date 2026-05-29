@@ -14,6 +14,12 @@ class ComptaController extends Controller
     {
         $today = today();
 
+        // Overall totals
+        $totalRecettes = AccountingEntry::where('type', 'recette')->where('status', 'active')->sum('amount');
+        $totalDepenses = AccountingEntry::where('type', 'depense')->where('status', 'active')->sum('amount');
+        $totalSoldeNet = $totalRecettes - $totalDepenses;
+
+        // Today's totals
         $todayRecettes = AccountingEntry::whereDate('date', $today)
             ->where('type', 'recette')->where('status', 'active')->sum('amount');
         $todayDepenses = AccountingEntry::whereDate('date', $today)
@@ -38,6 +44,7 @@ class ComptaController extends Controller
         $pendingCount = AccountingModification::where('status', 'pending')->count();
 
         return view('comptabilite.index', compact(
+            'totalRecettes', 'totalDepenses', 'totalSoldeNet',
             'todayRecettes', 'todayDepenses', 'soldeNet',
             'entries', 'modifications', 'pendingCount', 'tab'
         ));
