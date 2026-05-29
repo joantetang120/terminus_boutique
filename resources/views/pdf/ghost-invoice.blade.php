@@ -1,47 +1,55 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <title>Facture {{ $invoice->number }}</title>
     <style>
         @page {
-            margin: 0;
-            padding: 0;
+            size: A4;
+            margin: 15mm;
         }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
-            font-family: 'Courier New', monospace;
-            font-size: 9px;
-            line-height: 1.2;
+            font-family: 'Arial', sans-serif;
+            font-size: 11px;
+            line-height: 1.4;
             color: #000;
-            width: 72mm;
-            max-width: 72mm;
-            margin: 0;
-            padding: 3mm;
+            width: 210mm;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 10mm;
         }
+
         .receipt {
             width: 100%;
         }
+
         .company-header {
             text-align: center;
             margin-bottom: 10px;
             border-bottom: 1px dashed #000;
             padding-bottom: 8px;
         }
+
         .company-name {
             font-size: 12px;
             font-weight: bold;
             text-transform: uppercase;
             margin-bottom: 3px;
         }
+
         .company-details {
             font-size: 8px;
             line-height: 1.4;
         }
+
         .invoice-title {
             text-align: center;
             font-size: 11px;
@@ -49,15 +57,18 @@
             margin: 8px 0;
             text-transform: uppercase;
         }
+
         .invoice-info {
             font-size: 9px;
             margin-bottom: 8px;
         }
+
         .invoice-info-row {
             display: flex;
             justify-content: space-between;
             margin-bottom: 2px;
         }
+
         .client-section {
             border-top: 1px dashed #000;
             border-bottom: 1px dashed #000;
@@ -65,42 +76,51 @@
             margin-bottom: 8px;
             font-size: 9px;
         }
+
         .client-label {
             font-weight: bold;
         }
+
         .items-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 9px;
             margin-bottom: 8px;
         }
+
         .items-table th {
             text-align: left;
             border-bottom: 1px solid #000;
             padding: 3px 2px;
             font-weight: bold;
         }
+
         .items-table td {
             padding: 3px 2px;
             vertical-align: top;
         }
+
         .items-table .text-right {
             text-align: right;
         }
+
         .items-table .text-center {
             text-align: center;
         }
+
         .totals-section {
             border-top: 1px solid #000;
             padding-top: 6px;
             margin-top: 8px;
             font-size: 9px;
         }
+
         .total-row {
             display: flex;
             justify-content: space-between;
             margin-bottom: 2px;
         }
+
         .total-row.grand-total {
             font-size: 11px;
             font-weight: bold;
@@ -108,12 +128,14 @@
             padding-top: 4px;
             margin-top: 4px;
         }
+
         .payment-info {
             margin-top: 8px;
             padding-top: 6px;
             border-top: 1px dashed #000;
             font-size: 8px;
         }
+
         .footer {
             margin-top: 12px;
             padding-top: 8px;
@@ -121,36 +143,42 @@
             text-align: center;
             font-size: 8px;
         }
+
         .signature-section {
             margin-top: 15px;
             display: flex;
             justify-content: space-between;
             font-size: 8px;
         }
+
         .signature-box {
             width: 45%;
             text-align: center;
         }
+
         .signature-line {
             border-top: 1px solid #000;
             margin-top: 15px;
             padding-top: 3px;
         }
+
         .thank-you {
             text-align: center;
             font-size: 9px;
             font-weight: bold;
             margin-top: 10px;
         }
+
         @media print {
             body {
-                width: 80mm;
-                margin: 0;
-                padding: 3mm;
+                width: 210mm;
+                margin: 0 auto;
+                padding: 10mm;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="receipt">
         {{-- Company Header --}}
@@ -158,8 +186,8 @@
             <div class="company-name">{{ config('app.name', 'TERMINUS BOUTIQUE') }}</div>
             <div class="company-details">
                 {{ config('company.address', 'Terminus Bonamoussadi') }}<br>
-                Tél: {{ config('company.phone', 'Téléphone') }}<br>
-                Email: {{ config('company.email', 'Email') }}<br>
+                Tél: {{ config('company.phone', '690394801') }}<br>
+
                 {{ config('company.registration', '') }}
             </div>
         </div>
@@ -182,7 +210,7 @@
         {{-- Client Info --}}
         <div class="client-section">
             <span class="client-label">Client:</span> {{ $invoice->client_name }}<br>
-            @if($invoice->client_phone)
+            @if ($invoice->client_phone)
                 <span class="client-label">Tél:</span> {{ $invoice->client_phone }}
             @endif
         </div>
@@ -198,7 +226,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($invoice->items as $item)
+                @foreach ($invoice->items as $item)
                     <tr>
                         <td>{{ $item->designation }}</td>
                         <td class="text-center">{{ number_format($item->quantity_sold, 0, ',', ' ') }}</td>
@@ -215,12 +243,12 @@
                 <span>TOTAL:</span>
                 <span>{{ number_format($invoice->total, 0, ',', ' ') }} FCFA</span>
             </div>
-            @if($invoice->paid_amount > 0)
+            @if ($invoice->paid_amount > 0)
                 <div class="total-row">
                     <span>Payé:</span>
                     <span>{{ number_format($invoice->paid_amount, 0, ',', ' ') }} FCFA</span>
                 </div>
-                @if($invoice->balance > 0)
+                @if ($invoice->balance > 0)
                     <div class="total-row" style="font-weight: bold;">
                         <span>Solde dû:</span>
                         <span>{{ number_format($invoice->balance, 0, ',', ' ') }} FCFA</span>
@@ -256,4 +284,5 @@
         </div>
     </div>
 </body>
+
 </html>
