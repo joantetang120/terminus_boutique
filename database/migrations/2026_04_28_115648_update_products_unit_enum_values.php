@@ -13,10 +13,11 @@ return new class extends Migration
     public function up(): void
     {
         // Update unit column ENUM to include all valid values
-        DB::statement("ALTER TABLE products MODIFY COLUMN unit ENUM('carton', 'boite', 'paquet', 'piece', 'sceau', 'sacs', 'palettes', 'filet') NOT NULL");
+        DB::statement("ALTER TABLE products MODIFY COLUMN unit ENUM('carton', 'boite', 'paquet', 'piece', 'sceau', 'sacs', 'palettes', 'filet', 'bidon') NOT NULL");
 
         // Update purchase_unit column ENUM to include all valid values
-        DB::statement("ALTER TABLE products MODIFY COLUMN purchase_unit ENUM('carton', 'boite', 'paquet', 'piece', 'sceau', 'sacs', 'palettes', 'filet') NULL");
+        DB::statement("ALTER TABLE products MODIFY COLUMN purchase_unit ENUM('carton', 'boite', 'paquet', 'piece', 'sceau', 'sacs', 'palettes', 'filet', 'bidon') NULL");
+        DB::statement("ALTER TABLE products MODIFY COLUMN sale_unit ENUM('carton', 'boite', 'paquet', 'piece', 'sceau', 'sacs', 'palettes', 'filet', 'bidon') NULL");
     }
 
     /**
@@ -27,5 +28,6 @@ return new class extends Migration
         // Revert to original ENUM values
         DB::statement("ALTER TABLE products MODIFY COLUMN unit ENUM('carton', 'boite', 'paquet', 'piece') NOT NULL");
         DB::statement("ALTER TABLE products MODIFY COLUMN purchase_unit ENUM('carton', 'boite', 'paquet', 'piece') NULL");
+        DB::statement("ALTER TABLE products MODIFY COLUMN sale_unit ENUM('carton', 'boite', 'paquet', 'piece') NULL");
     }
 };

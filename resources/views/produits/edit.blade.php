@@ -207,6 +207,9 @@
                                     <option value="filet"
                                         {{ old('unit', $produit->unit) === 'filet' ? 'selected' : '' }}>Filet
                                     </option>
+                                    <option value="bidon"
+                                        {{ old('unit', $produit->unit) === 'bidon' ? 'selected' : '' }}>Bidon
+                                    </option>
                                 </select>
                             </div>
                             <p class="field-note warning">
@@ -295,6 +298,9 @@
                                             <option value="filet"
                                                 {{ old('purchase_unit', $produit->purchase_unit) === 'filet' ? 'selected' : '' }}>
                                                 Filet</option>
+                                            <option value="bidon"
+                                                {{ old('purchase_unit', $produit->purchase_unit) === 'bidon' ? 'selected' : '' }}>
+                                                Bidon</option>
                                         </select>
                                     </div>
                                 </div>
@@ -359,6 +365,9 @@
                                                             <option value="filet"
                                                                 {{ $conversion['unit'] === 'filet' ? 'selected' : '' }}>
                                                                 Filet</option>
+                                                            <option value="bidon"
+                                                                {{ $conversion['unit'] === 'bidon' ? 'selected' : '' }}>
+                                                                Bidon</option>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -425,6 +434,9 @@
                                                             <option value="filet"
                                                                 {{ $conversion->unit === 'filet' ? 'selected' : '' }}>
                                                                 Filet</option>
+                                                            <option value="bidon"
+                                                                {{ $conversion->unit === 'bidon' ? 'selected' : '' }}>
+                                                                Bidon</option>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -491,6 +503,9 @@
                                                             <option value="filet"
                                                                 {{ $produit->sale_unit === 'filet' ? 'selected' : '' }}>
                                                                 Filet</option>
+                                                            <option value="bidon"
+                                                                {{ $produit->sale_unit === 'bidon' ? 'selected' : '' }}>
+                                                                Bidon</option>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -1903,6 +1918,7 @@
                         <option value="sacs">Sacs</option>
                         <option value="palettes">Palettes</option>
                         <option value="filet">Filet</option>
+                        <option value="bidon">Bidon</option>
                     </select>
                 </div>
             </div>
