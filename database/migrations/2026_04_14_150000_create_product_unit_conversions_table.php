@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->enum('unit_type', ['purchase', 'sale']); // purchase = achat, sale = vente
-            $table->enum('unit', ['carton', 'boite', 'paquet', 'piece', 'sceau', 'sacs', 'palettes', 'filet']);
+            $table->enum('unit', ['carton', 'boite', 'paquet', 'piece', 'sceau', 'sacs', 'palettes', 'filet', 'bidon']);
             $table->integer('conversion_rate')->default(1); // 1 unit = X base units
             $table->timestamps();
 

@@ -175,10 +175,26 @@
                             onchange="updateEntryUnitOptions(); updateEntryPurchasePriceHint();">
                             <option value="">Sélectionner...</option>
                             @foreach ($products as $product)
+                                @php
+                                    $purchaseConversions = $product->purchaseConversions
+                                        ->map(fn($c) => ['unit' => $c->unit, 'rate' => $c->conversion_rate])
+                                        ->toArray();
+
+                                    if (
+                                        $product->purchase_unit &&
+                                        !collect($purchaseConversions)->first(fn($c) => $c['unit'] === $product->purchase_unit)
+                                    ) {
+                                        $purchaseConversions[] = [
+                                            'unit' => $product->purchase_unit,
+                                            'rate' => $product->purchase_conversion_rate,
+                                        ];
+                                    }
+                                @endphp
                                 <option value="{{ $product->id }}" data-unit="{{ $product->unit }}"
                                     data-purchase-unit="{{ $product->purchase_unit }}"
                                     data-purchase-rate="{{ $product->purchase_conversion_rate }}"
-                                    data-purchase-price="{{ $product->purchase_price }}">{{ $product->name }}</option>
+                                    data-purchase-price="{{ $product->purchase_price }}"
+                                    data-conversions='@json($purchaseConversions)'>{{ $product->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -344,18 +360,39 @@
 
             const baseUnit = selectedOption.dataset.unit;
             const purchaseUnit = selectedOption.dataset.purchaseUnit;
-            const purchaseRate = selectedOption.dataset.purchaseRate;
+            const purchaseRate = parseInt(selectedOption.dataset.purchaseRate) || 0;
+
+            let conversions = [];
+            try {
+                conversions = JSON.parse(selectedOption.dataset.conversions || '[]');
+            } catch (e) {
+                conversions = [];
+            }
+
+            if (purchaseUnit && purchaseRate && !conversions.find(conv => conv.unit === purchaseUnit)) {
+                conversions.push({
+                    unit: purchaseUnit,
+                    rate: purchaseRate
+                });
+            }
 
             let options = `<option value="${baseUnit}" selected>${baseUnit}</option>`;
-
-            if (purchaseUnit && purchaseRate) {
-                options += `<option value="${purchaseUnit}">${purchaseUnit}</option>`;
-            }
+            conversions.forEach(conv => {
+                if (conv.unit && conv.rate) {
+                    options += `<option value="${conv.unit}">${conv.unit}</option>`;
+                }
+            });
 
             unitSelect.innerHTML = options;
 
-            if (purchaseUnit && purchaseRate) {
-                conversionInfo.innerHTML = `Conversion: 1 ${purchaseUnit} = ${purchaseRate} ${baseUnit}`;
+            if (conversions.length > 0) {
+                let convInfo = 'Conversions:<br>';
+                conversions.forEach(conv => {
+                    if (conv.unit && conv.rate) {
+                        convInfo += `1 ${conv.unit} = ${conv.rate} ${baseUnit}<br>`;
+                    }
+                });
+                conversionInfo.innerHTML = convInfo;
                 conversionInfo.style.display = 'block';
             } else {
                 conversionInfo.style.display = 'none';

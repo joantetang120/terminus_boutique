@@ -21,8 +21,20 @@ class StockController extends Controller
     public function index(Request $request)
     {
         $products = Product::where('is_active', true)
-            ->with('saleConversions')
-            ->select('id', 'name', 'unit', 'purchase_price', 'current_stock', 'alert_threshold', 'is_active')
+            ->with(['purchaseConversions', 'saleConversions'])
+            ->select(
+                'id',
+                'name',
+                'unit',
+                'purchase_unit',
+                'purchase_conversion_rate',
+                'sale_unit',
+                'sale_conversion_rate',
+                'purchase_price',
+                'current_stock',
+                'alert_threshold',
+                'is_active'
+            )
             ->orderBy('name')
             ->get();
 

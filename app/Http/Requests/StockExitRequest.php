@@ -45,7 +45,34 @@ class StockExitRequest extends FormRequest
                     }
                 },
             ],
-            'input_unit' => 'nullable|string|in:carton,boite,paquet,piece,sceau,sacs,palettes,filet',
+            'input_unit' => [
+                'nullable',
+                'string',
+                function ($attribute, $value, $fail) {
+                    if (!$value) {
+                        return;
+                    }
+
+                    $product = Product::with('saleConversions')->find($this->product_id);
+                    if (!$product) {
+                        return;
+                    }
+
+                    $allowedUnits = [$product->unit];
+
+                    if ($product->sale_unit) {
+                        $allowedUnits[] = $product->sale_unit;
+                    }
+
+                    foreach ($product->saleConversions as $conversion) {
+                        $allowedUnits[] = $conversion->unit;
+                    }
+
+                    if (!in_array($value, array_unique($allowedUnits), true)) {
+                        $fail("L'unité sélectionnée n'est pas valide pour ce produit.");
+                    }
+                },
+            ],
             'note' => 'required|string|min:5|max:500',
         ];
     }
