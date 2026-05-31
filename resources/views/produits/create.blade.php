@@ -199,6 +199,8 @@
                                         Palettes</option>
                                     <option value="filet" {{ old('unit') === 'filet' ? 'selected' : '' }}>
                                         Filet</option>
+                                    <option value="bidon" {{ old('unit') === 'bidon' ? 'selected' : '' }}>
+                                        Bidon</option>
                                 </select>
                             </div>
                             <p class="field-note">
@@ -283,6 +285,9 @@
                                             <option value="filet"
                                                 {{ old('purchase_unit') === 'filet' ? 'selected' : '' }}>Filet
                                             </option>
+                                            <option value="bidon"
+                                                {{ old('purchase_unit') === 'bidon' ? 'selected' : '' }}>Bidon
+                                            </option>
                                         </select>
                                     </div>
                                 </div>
@@ -347,6 +352,9 @@
                                                             <option value="filet"
                                                                 {{ $conversion['unit'] === 'filet' ? 'selected' : '' }}>
                                                                 Filet</option>
+                                                            <option value="bidon"
+                                                                {{ $conversion['unit'] === 'bidon' ? 'selected' : '' }}>
+                                                                Bidon</option>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -513,6 +521,9 @@
                                         </option>
                                         <option value="filet"
                                             {{ old('initial_stock_unit') === 'filet' ? 'selected' : '' }}>filet
+                                        </option>
+                                        <option value="bidon"
+                                            {{ old('initial_stock_unit') === 'bidon' ? 'selected' : '' }}>bidon
                                         </option>
                                     </select>
                                 </div>
@@ -1915,6 +1926,7 @@
                         <option value="sacs">Sacs</option>
                         <option value="palettes">Palettes</option>
                         <option value="filet">Filet</option>
+                        <option value="bidon">Bidon</option>
                     </select>
                 </div>
             </div>

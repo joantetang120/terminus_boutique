@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->enum('unit', ['carton', 'boite', 'paquet', 'piece']);
+            $table->enum('unit', ['carton', 'boite', 'paquet', 'piece', 'sceau', 'sacs', 'palettes', 'filet', 'bidon']);
             $table->decimal('current_stock', 10, 2)->default(0);
             $table->decimal('alert_threshold', 10, 2)->default(0);
             $table->boolean('is_active')->default(true);

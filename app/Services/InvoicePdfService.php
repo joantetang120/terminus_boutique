@@ -43,9 +43,8 @@ class InvoicePdfService
 
         $pdf = Pdf::loadView('pdf.invoice', $data);
 
-        // Set paper size for 80mm thermal receipt printer format
-        // Width: 80mm (226.77 points), Height: auto based on content
-        $pdf->setPaper([0, 0, 226.77, 600], 'portrait');
+        // Use standard A4 paper to match the invoice template layout.
+        $pdf->setPaper('a4', 'portrait');
         $pdf->setOptions(['defaultFont' => 'Courier']);
 
         return $pdf;

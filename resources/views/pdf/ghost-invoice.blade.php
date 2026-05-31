@@ -21,14 +21,15 @@
             font-size: 11px;
             line-height: 1.4;
             color: #000;
-            width: 210mm;
-            max-width: 210mm;
-            margin: 0 auto;
-            padding: 10mm;
+            width: auto;
+            max-width: none;
+            margin: 0;
+            padding: 0;
         }
 
         .receipt {
-            width: 100%;
+            width: auto;
+            margin: 0 3mm;
         }
 
         .company-header {
@@ -171,9 +172,9 @@
 
         @media print {
             body {
-                width: 210mm;
-                margin: 0 auto;
-                padding: 10mm;
+                width: auto;
+                margin: 0;
+                padding: 0;
             }
         }
     </style>
