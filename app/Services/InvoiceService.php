@@ -366,7 +366,9 @@ class InvoiceService
                         note: 'Restitution annulation facture ' . $invoice->number . ' - ' . $reason,
                         by: $by,
                         inputUnit: null,
-                        inputQuantity: null
+                        inputQuantity: null,
+                        unitCost: 0,
+                        totalCost: 0
                     );
                 }
             }
