@@ -18,7 +18,7 @@
 
         body {
             font-family: 'Arial', sans-serif;
-            font-size: 11px;
+            font-size: 14px;
             line-height: 1.4;
             color: #000;
             width: auto;
@@ -29,7 +29,8 @@
 
         .receipt {
             width: auto;
-            margin: 0 3mm;
+            margin: 0 3mm 0 0;
+            padding: 0 8mm 0 3mm;
         }
 
         .company-header {
@@ -40,27 +41,27 @@
         }
 
         .company-name {
-            font-size: 12px;
+            font-size: 15px;
             font-weight: bold;
             text-transform: uppercase;
             margin-bottom: 3px;
         }
 
         .company-details {
-            font-size: 8px;
+            font-size: 11px;
             line-height: 1.4;
         }
 
         .invoice-title {
             text-align: center;
-            font-size: 11px;
+            font-size: 14px;
             font-weight: bold;
             margin: 8px 0;
             text-transform: uppercase;
         }
 
         .invoice-info {
-            font-size: 9px;
+            font-size: 12px;
             margin-bottom: 8px;
         }
 
@@ -75,7 +76,7 @@
             border-bottom: 1px dashed #000;
             padding: 6px 0;
             margin-bottom: 8px;
-            font-size: 9px;
+            font-size: 12px;
         }
 
         .client-label {
@@ -85,7 +86,7 @@
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9px;
+            font-size: 12px;
             margin-bottom: 8px;
         }
 
@@ -113,7 +114,7 @@
             border-top: 1px solid #000;
             padding-top: 6px;
             margin-top: 8px;
-            font-size: 9px;
+            font-size: 12px;
         }
 
         .total-row {
@@ -123,7 +124,7 @@
         }
 
         .total-row.grand-total {
-            font-size: 11px;
+            font-size: 14px;
             font-weight: bold;
             border-top: 1px solid #000;
             padding-top: 4px;
@@ -134,7 +135,7 @@
             margin-top: 8px;
             padding-top: 6px;
             border-top: 1px dashed #000;
-            font-size: 8px;
+            font-size: 11px;
         }
 
         .footer {
@@ -142,14 +143,14 @@
             padding-top: 8px;
             border-top: 1px dashed #000;
             text-align: center;
-            font-size: 8px;
+            font-size: 11px;
         }
 
         .signature-section {
             margin-top: 15px;
             display: flex;
             justify-content: space-between;
-            font-size: 8px;
+            font-size: 11px;
         }
 
         .signature-box {
@@ -165,7 +166,7 @@
 
         .thank-you {
             text-align: center;
-            font-size: 9px;
+            font-size: 12px;
             font-weight: bold;
             margin-top: 10px;
         }
@@ -220,10 +221,11 @@
         <table class="items-table">
             <thead>
                 <tr>
-                    <th style="width: 40%;">Désignation</th>
-                    <th class="text-center" style="width: 15%;">Qté</th>
-                    <th class="text-center" style="width: 15%;">Unité</th>
-                    <th class="text-right" style="width: 30%;">Prix</th>
+                    <th style="width: 35%;">Désignation</th>
+                    <th class="text-center" style="width: 12%;">Qté</th>
+                    <th class="text-center" style="width: 12%;">Unité</th>
+                    <th class="text-right" style="width: 18%;">Prix Unitaire</th>
+                    <th class="text-right" style="width: 23%;">Prix Total</th>
                 </tr>
             </thead>
             <tbody>
@@ -232,6 +234,7 @@
                         <td>{{ $item->designation }}</td>
                         <td class="text-center">{{ number_format($item->quantity_sold, 0, ',', ' ') }}</td>
                         <td class="text-center">{{ $item->unit_sold }}</td>
+                        <td class="text-right">{{ number_format($item->unit_price, 0, ',', ' ') }}</td>
                         <td class="text-right">{{ number_format($item->total_price, 0, ',', ' ') }}</td>
                     </tr>
                 @endforeach
@@ -264,7 +267,7 @@
         </div>
 
         {{-- Signatures --}}
-        <table style="width: 100%; margin-top: 20px; font-size: 8px;">
+        <table style="width: 100%; margin-top: 20px; font-size: 11px;">
             <tr>
                 <td style="width: 50%; text-align: left; vertical-align: bottom; padding-right: 10px;">
                     <div style="border-top: 1px solid #000; padding-top: 3px; display: inline-block; width: 80%;">
