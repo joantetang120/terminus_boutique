@@ -235,19 +235,19 @@
         <table class="items-table">
             <thead>
                 <tr>
-                    <th style="width: 35%;">Désignation</th>
-                    <th class="text-center" style="width: 12%;">Qté</th>
-                    <th class="text-center" style="width: 12%;">Unité</th>
+                    <th class="text-center" style="width: 10%;">Qté</th>
+                    <th class="text-center" style="width: 10%;">Unité</th>
+                    <th style="width: 42%;">Désignation</th>
                     <th class="text-right" style="width: 18%;">Prix Unitaire</th>
-                    <th class="text-right" style="width: 23%;">Prix Total</th>
+                    <th class="text-right" style="width: 20%;">Prix Total</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($invoice->items as $item)
                     <tr>
-                        <td>{{ $item->designation }}</td>
                         <td class="text-center">{{ number_format($item->quantity_sold, 0, ',', ' ') }}</td>
                         <td class="text-center">{{ $item->unit_sold }}</td>
+                        <td>{{ $item->designation }}</td>
                         <td class="text-right">{{ number_format($item->unit_price, 0, ',', ' ') }}</td>
                         <td class="text-right">{{ number_format($item->total_price, 0, ',', ' ') }}</td>
                     </tr>
