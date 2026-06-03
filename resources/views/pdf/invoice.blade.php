@@ -29,8 +29,8 @@
 
         .receipt {
             width: auto;
-            margin: 0 3mm 0 0;
-            padding: 0 8mm 0 3mm;
+            margin: 0 5mm 0 0;
+            padding: 0 10mm 0 3mm;
         }
 
         .logo {
@@ -237,9 +237,9 @@
                 <tr>
                     <th class="text-center" style="width: 10%;">Qté</th>
                     <th class="text-center" style="width: 10%;">Unité</th>
-                    <th style="width: 42%;">Désignation</th>
-                    <th class="text-right" style="width: 18%;">Prix Unitaire</th>
-                    <th class="text-right" style="width: 20%;">Prix Total</th>
+                    <th style="width: 38%;">Désignation</th>
+                    <th class="text-right" style="width: 20%;">Prix Unitaire</th>
+                    <th class="text-right" style="width: 22%;">Prix Total</th>
                 </tr>
             </thead>
             <tbody>
