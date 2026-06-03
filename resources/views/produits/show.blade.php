@@ -139,6 +139,84 @@
                                 </div>
                             </div>
 
+                            {{-- Equivalent Quantities Toggle --}}
+                            @php
+                                $equivUnits = [];
+                                $baseStock = (int) $produit->current_stock;
+
+                                if ($produit->purchase_unit && $produit->purchase_conversion_rate) {
+                                    $equivUnits[] = [
+                                        'unit' => $produit->purchase_unit,
+                                        'rate' => $produit->purchase_conversion_rate,
+                                        'qty' => (int) ($baseStock / $produit->purchase_conversion_rate),
+                                        'tag' => 'Achat',
+                                    ];
+                                }
+
+                                $seen = collect($equivUnits)->pluck('unit')->toArray();
+
+                                foreach ($produit->unitConversions as $conv) {
+                                    if (!in_array($conv->unit, $seen)) {
+                                        $equivUnits[] = [
+                                            'unit' => $conv->unit,
+                                            'rate' => $conv->conversion_rate,
+                                            'qty' => (int) ($baseStock / $conv->conversion_rate),
+                                            'tag' => $conv->unit_type === 'purchase' ? 'Achat' : 'Vente',
+                                        ];
+                                        $seen[] = $conv->unit;
+                                    }
+                                }
+
+                                if ($produit->sale_unit && $produit->sale_conversion_rate && !in_array($produit->sale_unit, $seen)) {
+                                    $equivUnits[] = [
+                                        'unit' => $produit->sale_unit,
+                                        'rate' => $produit->sale_conversion_rate,
+                                        'qty' => (int) ($baseStock / $produit->sale_conversion_rate),
+                                        'tag' => 'Vente',
+                                    ];
+                                }
+
+                                $hasEquiv = count(array_filter($equivUnits, fn($u) => $u['qty'] > 0)) > 0;
+                            @endphp
+
+                            @if ($hasEquiv)
+                                <div class="equiv-wrap">
+                                    <button type="button" class="equiv-btn" onclick="toggleEquiv()">
+                                        <svg class="equiv-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                                        </svg>
+                                        <span class="equiv-btn__label" id="equivLabel">Voir les équivalences</span>
+                                        <svg class="equiv-btn__chevron" id="equivChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="6 9 12 15 18 9"/>
+                                        </svg>
+                                    </button>
+                                    <div class="equiv-content" id="equivContent">
+                                        <span class="equiv-base">{{ number_format($baseStock, 0, ',', ' ') }} {{ $produit->unit }}</span>
+                                        @foreach ($equivUnits as $i => $equiv)
+                                            @if ($equiv['qty'] > 0)
+                                                <span class="equiv-eq">=</span>
+                                                <span class="equiv-item">
+                                                    <span class="equiv-qty">{{ number_format($equiv['qty'], 0, ',', ' ') }}</span>
+                                                    <span class="equiv-unit">{{ $equiv['unit'] }}</span>
+                                                    <span class="equiv-tag">{{ $equiv['tag'] }}</span>
+                                                </span>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                </div>
+
+                                <script>
+                                    function toggleEquiv() {
+                                        const c = document.getElementById('equivContent');
+                                        const l = document.getElementById('equivLabel');
+                                        const ch = document.getElementById('equivChevron');
+                                        const open = c.classList.toggle('is-open');
+                                        l.textContent = open ? 'Masquer' : 'Voir les équivalences';
+                                        ch.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+                                    }
+                                </script>
+                            @endif
+
                             {{-- Threshold + Conversions row --}}
                             <div class="stock-panel__meta">
                                 <div class="alert-row {{ $produit->isLowStock() ? 'alert-row--warn' : '' }}">
@@ -1264,6 +1342,98 @@
 
         .badge__dot--off {
             background: #ef4444;
+        }
+
+        /* ===== EQUIVALENT QUANTITIES ===== */
+        .equiv-wrap {
+            margin-top: 2px;
+        }
+
+        .equiv-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            background: transparent;
+            color: #64748b;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .equiv-btn:hover {
+            border-color: #1B3A6B;
+            color: #1B3A6B;
+            background: #f8fafc;
+        }
+
+        .equiv-btn__icon {
+            width: 14px;
+            height: 14px;
+        }
+
+        .equiv-btn__chevron {
+            width: 12px;
+            height: 12px;
+            transition: transform 0.25s ease;
+        }
+
+        .equiv-content {
+            display: none;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+            padding: 10px 14px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.8125rem;
+        }
+
+        .equiv-content.is-open {
+            display: flex;
+        }
+
+        .equiv-base {
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .equiv-eq {
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .equiv-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .equiv-qty {
+            font-weight: 700;
+            color: #059669;
+        }
+
+        .equiv-unit {
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .equiv-tag {
+            font-size: 0.625rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 1px 6px;
+            border-radius: 4px;
+            background: #e2e8f0;
+            color: #475569;
         }
 
         /* ===== PRICES SECTION ===== */
