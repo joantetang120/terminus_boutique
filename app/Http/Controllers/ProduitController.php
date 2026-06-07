@@ -134,7 +134,7 @@ class ProduitController extends Controller
         // Create initial stock movement if stock > 0 (without incrementing since product already has the stock)
         if ($baseQuantity > 0) {
             $unitCost = $product->purchase_price ?? 0;
-            $totalCost = $unitCost * $baseQuantity;
+            $totalCost = $unitCost * $inputQuantity;
 
             $stockMovement = StockMovement::create([
                 'product_id' => $product->id,
