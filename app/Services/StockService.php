@@ -113,8 +113,13 @@ class StockService
             }
 
             // Calculate total cost for exit (COGS)
-            $unitCost = $product->purchase_price ?? 0;
-            $totalCost = $unitCost * $baseQuantity;
+            $purchasePrice = $product->purchase_price ?? 0;
+            if ($product->purchase_unit && $product->purchase_conversion_rate && $product->purchase_unit !== $product->unit) {
+                $costPerBaseUnit = $purchasePrice / $product->purchase_conversion_rate;
+            } else {
+                $costPerBaseUnit = $purchasePrice;
+            }
+            $totalCost = $costPerBaseUnit * $baseQuantity;
 
             $movement = StockMovement::create([
                 'product_id' => $product->id,
@@ -122,7 +127,7 @@ class StockService
                 'quantity' => $baseQuantity,
                 'input_quantity' => $inputQuantity ?? $quantity,
                 'input_unit' => $inputUnit ?? $product->unit,
-                'unit_cost' => $unitCost,
+                'unit_cost' => $costPerBaseUnit,
                 'total_cost' => $totalCost,
                 'reference_type' => $refType,
                 'reference_id' => $refId,
