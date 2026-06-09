@@ -16,7 +16,7 @@
                         <h3 style="font-size:1rem;font-weight:600;margin:0;">Client</h3>
                         <button type="button" @click="togglePriceVisibility()"
                             style="background:#fff;border:2px solid #3b82f6;border-radius:8px;padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:0.875rem;font-weight:600;color:#3b82f6;transition:all 0.2s;box-shadow:0 2px 4px rgba(59, 130, 246, 0.15);"
-                            :title="pricesVisible ? 'Masquer les prix' : 'Afficher les prix'"
+                            :title="pricesVisible ? 'Masquer le prix minimum' : 'Afficher le prix minimum'"
                             @mouseover="$event.target.style.background='#eff6ff'; $event.target.style.borderColor='#2563eb'"
                             @mouseout="$event.target.style.background='#fff'; $event.target.style.borderColor='#3b82f6'">
                             <svg x-show="pricesVisible" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -33,7 +33,7 @@
                                 <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
                                 <line x1="2" x2="22" y1="2" y2="22"></line>
                             </svg>
-                            <span x-text="pricesVisible ? 'Masquer les prix' : 'Afficher les prix'"></span>
+                            <span x-text="pricesVisible ? 'Masquer prix min' : 'Afficher prix min'"></span>
                         </button>
                     </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -41,7 +41,7 @@
                             <label class="form-label" for="client_name">Nom du client <span
                                     style="color:#C0392B;">*</span></label>
                             <input class="form-input" type="text" id="client_name" name="client_name"
-                                value="{{ old('client_name') }}" required @input="markDirty()">
+                                value="{{ old('client_name') }}" required x-model="clientName" @input="markDirty()">
                             @error('client_name')
                                 <div class="form-error">{{ $message }}</div>
                             @enderror
@@ -184,28 +184,28 @@
                                 </div>
                             </div>
 
-                            <div x-show="item.unitPriceInfo.hasPrice && pricesVisible"
-                                style="margin-bottom:12px;padding:10px 12px;background:#fefce8;border-radius:4px;border-left:3px solid #f59e0b;">
-                                <div
-                                    style="display:flex;justify-content:space-between;align-items:center;font-size:0.8125rem;flex-wrap:wrap;gap:8px;">
-                                    <span style="color:#92400e;font-weight:500;">
-                                        <span x-text="item.unitPriceInfo.unitLabel"></span>:
-                                    </span>
-                                    <div style="display:flex;gap:12px;align-items:center;">
-                                        <span style="color:#166534;">
-                                            Prix: <strong
-                                                x-text="formatCurrency(item.unitPriceInfo.salePrice)"></strong>
-                                        </span>
-                                        <span x-show="item.unitPriceInfo.marginPercentage > 0" style="color:#7c3aed;">
-                                            Marge: <strong x-text="item.unitPriceInfo.marginPercentage + '%'"></strong>
-                                        </span>
-                                        <span style="color:#dc2626;font-weight:600;">
-                                            Min: <strong
-                                                x-text="formatCurrency(item.unitPriceInfo.minimumPrice)"></strong>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
+                            <div x-show="item.unitPriceInfo.hasPrice"
+                                 style="margin-bottom:12px;padding:10px 12px;background:#fefce8;border-radius:4px;border-left:3px solid #f59e0b;">
+                                 <div
+                                     style="display:flex;justify-content:space-between;align-items:center;font-size:0.8125rem;flex-wrap:wrap;gap:8px;">
+                                     <span style="color:#92400e;font-weight:500;">
+                                         <span x-text="item.unitPriceInfo.unitLabel"></span>:
+                                     </span>
+                                     <div style="display:flex;gap:12px;align-items:center;">
+                                         <span style="color:#166534;">
+                                             Prix: <strong
+                                                 x-text="formatCurrency(item.unitPriceInfo.salePrice)"></strong>
+                                         </span>
+                                         <span x-show="item.unitPriceInfo.marginPercentage > 0" style="color:#7c3aed;">
+                                             Marge: <strong x-text="item.unitPriceInfo.marginPercentage + '%'"></strong>
+                                         </span>
+                                         <span x-show="pricesVisible" style="color:#dc2626;font-weight:600;">
+                                             Min: <strong
+                                                 x-text="formatCurrency(item.unitPriceInfo.minimumPrice)"></strong>
+                                         </span>
+                                     </div>
+                                 </div>
+                             </div>
 
                             <div x-show="item.hasPriceError"
                                 style="margin-bottom:12px;padding:10px 12px;background:#fef2f2;border-radius:4px;border-left:3px solid #ef4444;">
@@ -306,14 +306,68 @@
 
                     <div class="form-group" style="margin-top:16px;">
                         <label class="form-label" for="note">Note (optionnel)</label>
-                        <textarea class="form-textarea" id="note" name="note" rows="2" @input="markDirty()">{{ old('note') }}</textarea>
+                        <textarea class="form-textarea" id="note" name="note" rows="2" x-model="note" @input="markDirty()">{{ old('note') }}</textarea>
                     </div>
                 </div>
             </div>
 
-            <div>
-                <div class="card" style="position:sticky;top:88px;">
-                    <h3 style="font-size:1rem;font-weight:600;margin-bottom:16px;">Resume</h3>
+            <div style="position:sticky;top:88px;align-self:start;">
+                {{-- Invoice Preview --}}
+                <div class="card" style="margin-bottom:24px;overflow:hidden;">
+                    <h3 style="font-size:1rem;font-weight:600;margin-bottom:16px;">Aperçu de la facture</h3>
+
+                    <div style="border-bottom:2px solid #1e3a8a;padding-bottom:12px;margin-bottom:12px;">
+                        <h2 style="color:#1e3a8a;font-size:1.125rem;font-weight:700;margin:0;">TERMINUS BOUTIQUE</h2>
+                        <div style="font-size:0.75rem;color:#64748b;">Bonamoussadi — Douala</div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;font-size:0.75rem;">
+                        <div>
+                            <div style="color:#64748b;">Client</div>
+                            <div style="font-weight:600;color:#1e293b;" x-text="clientName || '—'"></div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="color:#64748b;">Date</div>
+                            <div style="font-weight:600;color:#1e293b;" x-text="new Date().toLocaleDateString('fr-FR')"></div>
+                        </div>
+                    </div>
+
+                    <table style="width:100%;border-collapse:collapse;font-size:0.6875rem;">
+                        <thead>
+                            <tr style="background:#f8fafc;">
+                                <th style="padding:6px 4px;text-align:left;font-weight:600;color:#475569;">Article</th>
+                                <th style="padding:6px 4px;text-align:center;font-weight:600;color:#475569;width:40px;">Qté</th>
+                                <th style="padding:6px 4px;text-align:right;font-weight:600;color:#475569;width:70px;">P.U.</th>
+                                <th style="padding:6px 4px;text-align:right;font-weight:600;color:#475569;width:80px;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="item in items" :key="item.product_id">
+                                <tr x-show="item.designation">
+                                    <td style="padding:5px 4px;border-top:1px solid #e2e8f0;color:#1e293b;" x-text="item.designation"></td>
+                                    <td style="padding:5px 4px;border-top:1px solid #e2e8f0;text-align:center;color:#1e293b;" x-text="item.quantity_sold"></td>
+                                    <td style="padding:5px 4px;border-top:1px solid #e2e8f0;text-align:right;color:#1e293b;" x-text="formatCurrency(item.unit_price)"></td>
+                                    <td style="padding:5px 4px;border-top:1px solid #e2e8f0;text-align:right;font-weight:600;color:#1e293b;" x-text="formatCurrency((item.quantity_sold || 0) * (item.unit_price || 0))"></td>
+                                </tr>
+                            </template>
+                            <tr x-show="!items.length || !items.some(i => i.designation)">
+                                <td colspan="4" style="padding:16px;text-align:center;color:#94a3b8;font-size:0.6875rem;">Aucun article ajouté</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div style="margin-top:10px;text-align:right;padding-top:8px;border-top:2px solid #1e3a8a;">
+                        <span style="font-size:0.8125rem;color:#64748b;">Total</span>
+                        <div style="font-weight:700;font-size:1.125rem;color:#1e3a8a;" x-text="formatCurrency(total())"></div>
+                    </div>
+
+                    <div x-show="note" style="margin-top:10px;padding:8px;background:#f8fafc;border-radius:4px;font-size:0.6875rem;color:#64748b;">
+                        <strong>Note:</strong> <span x-text="note"></span>
+                    </div>
+                </div>
+
+                {{-- Resume --}}
+                <div class="card">
                     <div style="display:flex;flex-direction:column;gap:12px;">
                         <div style="display:flex;justify-content:space-between;">
                             <span style="color:#64748B;">Nombre d'articles:</span>
@@ -441,6 +495,8 @@
             return {
                 items: [],
                 pricesVisible: true,
+                clientName: '{{ old('client_name') }}',
+                note: '{{ old('note') }}',
 
                 // Draft state
                 showLeaveModal: false,
