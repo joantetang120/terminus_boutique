@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AccountingEntry;
 use App\Models\AccountingModification;
+use App\Models\StockMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -12,18 +13,41 @@ class ComptaController extends Controller
 {
     public function index(Request $request)
     {
-        $today = today();
+        $filterDate = $request->filled('date') ? $request->date : today()->format('Y-m-d');
+        $filterLabel = $request->filled('date') ? \Carbon\Carbon::parse($request->date)->format('d/m/Y') : "du jour";
 
         // Overall totals
         $totalRecettes = AccountingEntry::where('type', 'recette')->where('status', 'active')->sum('amount');
-        $totalDepenses = AccountingEntry::where('type', 'depense')->where('status', 'active')->sum('amount');
+
+        // Manual expenses (Expense reference or no reference)
+        $totalDepenses = AccountingEntry::where('type', 'depense')->where('status', 'active')
+            ->where(function ($q) {
+                $q->whereNull('reference_type')
+                  ->orWhere('reference_type', 'Expense');
+            })
+            ->sum('amount');
+
+        // Product expenses (stock movements)
+        $totalDepensesProduits = AccountingEntry::where('type', 'depense')->where('status', 'active')
+            ->where('reference_type', StockMovement::class)
+            ->sum('amount');
+
         $totalSoldeNet = $totalRecettes - $totalDepenses;
 
-        // Today's totals
-        $todayRecettes = AccountingEntry::whereDate('date', $today)
+        // Filtered date totals (use request date or today)
+        $todayRecettes = AccountingEntry::whereDate('date', $filterDate)
             ->where('type', 'recette')->where('status', 'active')->sum('amount');
-        $todayDepenses = AccountingEntry::whereDate('date', $today)
-            ->where('type', 'depense')->where('status', 'active')->sum('amount');
+        $todayDepenses = AccountingEntry::whereDate('date', $filterDate)
+            ->where('type', 'depense')->where('status', 'active')
+            ->where(function ($q) {
+                $q->whereNull('reference_type')
+                  ->orWhere('reference_type', 'Expense');
+            })
+            ->sum('amount');
+        $todayDepensesProduits = AccountingEntry::whereDate('date', $filterDate)
+            ->where('type', 'depense')->where('status', 'active')
+            ->where('reference_type', StockMovement::class)
+            ->sum('amount');
         $soldeNet = $todayRecettes - $todayDepenses;
 
         $tab = $request->get('tab', 'entries');
@@ -44,9 +68,9 @@ class ComptaController extends Controller
         $pendingCount = AccountingModification::where('status', 'pending')->count();
 
         return view('comptabilite.index', compact(
-            'totalRecettes', 'totalDepenses', 'totalSoldeNet',
-            'todayRecettes', 'todayDepenses', 'soldeNet',
-            'entries', 'modifications', 'pendingCount', 'tab'
+            'totalRecettes', 'totalDepenses', 'totalDepensesProduits', 'totalSoldeNet',
+            'todayRecettes', 'todayDepenses', 'todayDepensesProduits', 'soldeNet',
+            'filterLabel', 'entries', 'modifications', 'pendingCount', 'tab'
         ));
     }
 

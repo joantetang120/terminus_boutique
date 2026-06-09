@@ -105,6 +105,11 @@ Route::middleware(['auth'])->group(function () {
         ->name('comptabilite.factures.payment')
         ->middleware('can:facture.payment');
 
+    // Marges
+    Route::get('marges', [\App\Http\Controllers\MargeController::class, 'index'])
+        ->name('marge.index')
+        ->middleware('can:compta.view');
+
     // Dépenses (Expenses) - Opérationnelles
     Route::get('depenses', [\App\Http\Controllers\ExpenseController::class, 'index'])
         ->name('expenses.index')
