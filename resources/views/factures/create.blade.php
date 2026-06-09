@@ -7,7 +7,7 @@
         </div>
     </div>
 
-    <form action="{{ route('factures.store') }}" method="POST" x-data="invoiceForm()">
+    <form action="{{ route('factures.store') }}" method="POST" x-data="invoiceForm()" @submit="formSubmitting = true">
         @csrf
         <div style="display:grid;grid-template-columns:60% 40%;gap:24px;">
             <div>
@@ -41,7 +41,7 @@
                             <label class="form-label" for="client_name">Nom du client <span
                                     style="color:#C0392B;">*</span></label>
                             <input class="form-input" type="text" id="client_name" name="client_name"
-                                value="{{ old('client_name') }}" required>
+                                value="{{ old('client_name') }}" required @input="markDirty()">
                             @error('client_name')
                                 <div class="form-error">{{ $message }}</div>
                             @enderror
@@ -49,7 +49,7 @@
                         <div class="form-group">
                             <label class="form-label" for="client_phone">Telephone (optionnel)</label>
                             <input class="form-input" type="text" id="client_phone" name="client_phone"
-                                value="{{ old('client_phone') }}">
+                                value="{{ old('client_phone') }}" @input="markDirty()">
                         </div>
                     </div>
 
@@ -306,7 +306,7 @@
 
                     <div class="form-group" style="margin-top:16px;">
                         <label class="form-label" for="note">Note (optionnel)</label>
-                        <textarea class="form-textarea" id="note" name="note" rows="2">{{ old('note') }}</textarea>
+                        <textarea class="form-textarea" id="note" name="note" rows="2" @input="markDirty()">{{ old('note') }}</textarea>
                     </div>
                 </div>
             </div>
@@ -344,10 +344,69 @@
                 </div>
             </div>
         </div>
+
+            {{-- Draft Recovery Modal --}}
+            <div x-show="showDraftModal" class="modal-backdrop" style="display:none;z-index:9999;">
+                <div class="modal" @click.away="() => {}" style="max-width:420px;">
+                    <div class="modal-header">
+                        <h3>Brouillon trouvé</h3>
+                    </div>
+                    <div class="modal-body">
+                        <p style="margin-bottom:16px;color:#475569;">
+                            Un brouillon de facture non terminée a été trouvé.
+                            Voulez-vous le restaurer ?
+                        </p>
+                        <p style="font-size:0.8125rem;color:#94a3b8;">
+                            Si vous choisissez de ne pas le restaurer, le brouillon sera supprimé.
+                        </p>
+                    </div>
+                    <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;">
+                        <button type="button" class="btn btn-secondary" @click="discardDraft()">
+                            Nouvelle facture
+                        </button>
+                        <button type="button" class="btn btn-primary" @click="loadDraft()">
+                            Restaurer le brouillon
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Leave Confirmation Modal --}}
+            <div x-show="showLeaveModal" class="modal-backdrop" style="display:none;z-index:9999;">
+                <div class="modal" @click.away="cancelLeave()" style="max-width:420px;">
+                    <div class="modal-header">
+                        <h3>Modifications non sauvegardées</h3>
+                    </div>
+                    <div class="modal-body">
+                        <p style="margin-bottom:16px;color:#475569;">
+                            Vous avez des modifications en cours. Que souhaitez-vous faire ?
+                        </p>
+                    </div>
+                    <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;">
+                        <button type="button" class="btn btn-secondary" @click="cancelLeave()">
+                            Rester
+                        </button>
+                        <button type="button" class="btn btn-warning" style="background:#E67E22;color:white;"
+                            @click="discardAndLeave()">
+                            Ne pas sauvegarder
+                        </button>
+                        <button type="button" class="btn btn-success" @click="saveAndLeave()">
+                            Sauvegarder le brouillon
+                        </button>
+                    </div>
+                </div>
+            </div>
     </form>
+
+    @php
+        $oldItems = old('items', []);
+        $hasErrors = $errors->any();
+    @endphp
 
     <script>
         const productsData = @json($products ?? []);
+        const oldItemsData = @json($oldItems);
+        const hasValidationErrors = @json($hasErrors);
 
         function emptyPriceInfo() {
             return {
@@ -383,9 +442,222 @@
                 items: [],
                 pricesVisible: true,
 
+                // Draft state
+                showLeaveModal: false,
+                pendingNavigation: null,
+                isDirty: false,
+                showDraftModal: false,
+                formSubmitting: false,
+                loadingDraft: false,
+
                 init() {
-                    this.addItem();
+                    // Restore from validation errors first (before draft)
+                    if (oldItemsData.length > 0) {
+                        this.restoreFromOld(oldItemsData);
+                    } else {
+                        this.addItem();
+                    }
+
+                    // Check for existing draft (only on fresh page load, not after validation errors)
+                    if (!hasValidationErrors) {
+                        this.$nextTick(() => this.checkDraft());
+                    }
+
+                    // Watch items for changes
+                    this.$watch('items', () => {
+                        if (!this.loadingDraft) this.markDirty();
+                    }, { deep: true });
+
+                    // Setup navigation guard
+                    this.$nextTick(() => this.setupNavigationGuard());
                 },
+
+                // ── Draft methods ──
+
+                setupNavigationGuard() {
+                    document.addEventListener('click', (e) => {
+                        if (this.formSubmitting) return;
+                        const link = e.target.closest('a');
+                        if (!link) return;
+                        const href = link.getAttribute('href');
+                        if (!href || href === '#' || href.startsWith('javascript:')) return;
+                        if (link.hasAttribute('target')) return;
+                        if (link.hasAttribute('data-no-guard')) return;
+                        if (this.isDirty) {
+                            e.preventDefault();
+                            this.pendingNavigation = href;
+                            this.showLeaveModal = true;
+                        }
+                    });
+
+                    window.addEventListener('beforeunload', (e) => {
+                        if (this.isDirty && !this.formSubmitting) {
+                            e.preventDefault();
+                            e.returnValue = '';
+                        }
+                    });
+                },
+
+                checkDraft() {
+                    const saved = localStorage.getItem('facture_draft');
+                    if (saved) {
+                        try {
+                            const parsed = JSON.parse(saved);
+                            if (parsed && parsed.items && parsed.items.length > 0) {
+                                this.showDraftModal = true;
+                            }
+                        } catch (e) {
+                            localStorage.removeItem('facture_draft');
+                        }
+                    }
+                },
+
+                getFormFields() {
+                    return {
+                        client_name: document.getElementById('client_name')?.value || '',
+                        client_phone: document.getElementById('client_phone')?.value || '',
+                        note: document.getElementById('note')?.value || '',
+                    };
+                },
+
+                setFormFields(fields) {
+                    const nameInput = document.getElementById('client_name');
+                    const phoneInput = document.getElementById('client_phone');
+                    const noteInput = document.getElementById('note');
+                    if (nameInput) nameInput.value = fields.client_name || '';
+                    if (phoneInput) phoneInput.value = fields.client_phone || '';
+                    if (noteInput) noteInput.value = fields.note || '';
+                },
+
+                saveDraft() {
+                    const fields = this.getFormFields();
+                    const draft = {
+                        client_name: fields.client_name,
+                        client_phone: fields.client_phone,
+                        note: fields.note,
+                        items: this.items.map(item => ({
+                            product_id: item.product_id,
+                            product_search: item.product_search,
+                            designation: item.designation,
+                            unit_sold: item.unit_sold,
+                            quantity_sold: item.quantity_sold,
+                            unit_price: item.unit_price,
+                            total_price: item.total_price,
+                            conversion_rate: item.conversion_rate,
+                            quantity_deducted: item.quantity_deducted
+                        })),
+                        savedAt: new Date().toISOString()
+                    };
+                    localStorage.setItem('facture_draft', JSON.stringify(draft));
+                },
+
+                loadDraft() {
+                    const saved = localStorage.getItem('facture_draft');
+                    if (!saved) return;
+                    try {
+                        const draft = JSON.parse(saved);
+                        this.loadingDraft = true;
+
+                        // Restore text fields
+                        this.setFormFields({
+                            client_name: draft.client_name || '',
+                            client_phone: draft.client_phone || '',
+                            note: draft.note || '',
+                        });
+
+                        // Restore items
+                        this.items = [];
+                        if (draft.items && draft.items.length > 0) {
+                            draft.items.forEach(itemData => {
+                                const item = createEmptyItem();
+                                const product = productsData.find(p => p.id == itemData.product_id);
+                                item.product_id = itemData.product_id;
+                                item.product_search = itemData.product_search || (product ? product.name : '');
+                                item.designation = itemData.designation;
+                                item.unit_sold = itemData.unit_sold;
+                                item.quantity_sold = itemData.quantity_sold;
+                                item.unit_price = itemData.unit_price;
+                                item.total_price = itemData.total_price;
+                                item.conversion_rate = itemData.conversion_rate;
+                                item.quantity_deducted = itemData.quantity_deducted || 0;
+                                item.productData = product || null;
+                                item.hasPriceError = false;
+                                this.items.push(item);
+                                if (product && item.unit_sold) {
+                                    this.updatePriceInfo(this.items.length - 1);
+                                    this.validatePrice(this.items.length - 1);
+                                }
+                            });
+                        }
+
+                        this.loadingDraft = false;
+                        this.isDirty = false;
+                    } catch (e) {
+                        localStorage.removeItem('facture_draft');
+                    }
+                    this.showDraftModal = false;
+                },
+
+                discardDraft() {
+                    localStorage.removeItem('facture_draft');
+                    this.showDraftModal = false;
+                    this.isDirty = false;
+                },
+
+                saveAndLeave() {
+                    this.saveDraft();
+                    this.showLeaveModal = false;
+                    this.isDirty = false;
+                    if (this.pendingNavigation) {
+                        window.location.href = this.pendingNavigation;
+                    }
+                },
+
+                discardAndLeave() {
+                    if (!this.showDraftModal) {
+                        localStorage.removeItem('facture_draft');
+                    }
+                    this.showLeaveModal = false;
+                    this.isDirty = false;
+                    if (this.pendingNavigation) {
+                        window.location.href = this.pendingNavigation;
+                    }
+                },
+
+                cancelLeave() {
+                    this.showLeaveModal = false;
+                    this.pendingNavigation = null;
+                },
+
+                markDirty() {
+                    this.isDirty = true;
+                },
+
+                restoreFromOld(oldItems) {
+                    this.items = [];
+                    oldItems.forEach(itemData => {
+                        const item = createEmptyItem();
+                        const product = productsData.find(p => p.id == itemData.product_id);
+                        item.product_id = itemData.product_id;
+                        item.product_search = product ? product.name : (itemData.designation || '');
+                        item.designation = itemData.designation || '';
+                        item.unit_sold = itemData.unit_sold || '';
+                        item.quantity_sold = itemData.quantity_sold || 1;
+                        item.unit_price = itemData.unit_price || 0;
+                        item.total_price = itemData.total_price || 0;
+                        item.conversion_rate = itemData.conversion_rate || 1;
+                        item.quantity_deducted = Math.round((itemData.quantity_sold || 0) * (itemData.conversion_rate || 1));
+                        item.productData = product || null;
+                        this.items.push(item);
+                        if (product && item.unit_sold) {
+                            this.updatePriceInfo(this.items.length - 1);
+                            this.validatePrice(this.items.length - 1);
+                        }
+                    });
+                    this.isDirty = false;
+                },
+
+                // ── Original methods ──
 
                 togglePriceVisibility() {
                     this.pricesVisible = !this.pricesVisible;
@@ -393,11 +665,13 @@
 
                 addItem() {
                     this.items.push(createEmptyItem());
+                    this.markDirty();
                 },
 
                 removeItem(index) {
                     if (this.items.length > 1) {
                         this.items.splice(index, 1);
+                        this.markDirty();
                     }
                 },
 
@@ -630,4 +904,8 @@
             };
         }
     </script>
+
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </x-app-layout>
