@@ -588,9 +588,9 @@
                 saveDraft() {
                     const fields = this.getFormFields();
                     const draft = {
-                        client_name: fields.client_name,
+                        client_name: this.clientName || fields.client_name,
                         client_phone: fields.client_phone,
-                        note: fields.note,
+                        note: this.note || fields.note,
                         items: this.items.map(item => ({
                             product_id: item.product_id,
                             product_search: item.product_search,
@@ -620,6 +620,8 @@
                             client_phone: draft.client_phone || '',
                             note: draft.note || '',
                         });
+                        this.clientName = draft.client_name || '';
+                        this.note = draft.note || '';
 
                         // Restore items
                         this.items = [];
