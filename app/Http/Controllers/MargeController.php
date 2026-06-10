@@ -62,18 +62,36 @@ class MargeController extends Controller
         $totalMargin = $totalCa - $totalCost;
         $marginRate = $totalCa > 0 ? round($totalMargin / $totalCa * 100, 2) : 0;
 
-        // Top client by margin
-        $topClient = (clone $baseQuery)
-            ->select([
-                'invoices.client_name',
-                DB::raw('SUM(invoice_items.total_price) as total_ca'),
-                DB::raw("COALESCE(SUM($costSub), 0) as total_cost"),
-            ])
-            ->whereNotNull('invoices.client_name')
-            ->where('invoices.client_name', '!=', '')
-            ->groupBy('invoices.client_name')
-            ->orderBy(DB::raw('SUM(invoice_items.total_price) - COALESCE(SUM(' . $costSub . '), 0)'), 'desc')
-            ->first();
+        // Top client by margin (subquery approach to avoid ONLY_FULL_GROUP_BY)
+        $topClientSql = 'SELECT i.client_name, ii.total_price, COALESCE(('
+            . 'SELECT sm.total_cost FROM stock_movements sm'
+            . ' WHERE sm.reference_type = "invoice"'
+            . ' AND sm.reference_id = ii.invoice_id'
+            . ' AND sm.product_id = ii.product_id'
+            . ' AND sm.type = "exit"'
+            . ' AND sm.deleted_at IS NULL'
+            . ' ORDER BY sm.id ASC LIMIT 1'
+            . '), 0) as cost'
+            . ' FROM invoice_items ii'
+            . ' JOIN invoices i ON i.id = ii.invoice_id'
+            . ' WHERE i.deleted_at IS NULL AND i.status != "ANNULEE"'
+            . ' AND i.client_name IS NOT NULL AND i.client_name != ""';
+
+        $bindings = [];
+        if ($request->filled('date')) { $topClientSql .= ' AND DATE(i.created_at) = ?'; $bindings[] = $request->date; }
+        if ($request->filled('month')) { $topClientSql .= ' AND MONTH(i.created_at) = ?'; $bindings[] = $request->month; }
+        if ($request->filled('year')) { $topClientSql .= ' AND YEAR(i.created_at) = ?'; $bindings[] = $request->year; }
+        if ($request->filled('product_id')) { $topClientSql .= ' AND ii.product_id = ?'; $bindings[] = $request->product_id; }
+        if ($request->filled('client_name')) { $topClientSql .= ' AND i.client_name LIKE ?'; $bindings[] = '%' . $request->client_name . '%'; }
+
+        $topClient = DB::selectOne(
+            'SELECT t.client_name, SUM(t.total_price) as total_ca, SUM(t.cost) as total_cost'
+            . ' FROM (' . $topClientSql . ') t'
+            . ' GROUP BY t.client_name'
+            . ' ORDER BY SUM(t.total_price) - SUM(t.cost) DESC'
+            . ' LIMIT 1',
+            $bindings
+        );
 
         if ($topClient) {
             $topCa = (float) $topClient->total_ca;
