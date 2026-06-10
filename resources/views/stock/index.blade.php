@@ -121,7 +121,7 @@
                                 {{ number_format($movement->total_cost, 0, ',', ' ') }} FCFA
                                 @if ($movement->unit_cost > 0)
                                     <small
-                                        style="color:#64748B;">({{ number_format($movement->unit_cost, 0, ',', ' ') }}/{{ $movement->product->unit ?? 'unit' }})</small>
+                                        style="color:#64748B;">({{ number_format($movement->unit_cost, 0, ',', ' ') }}/{{ $movement->input_unit ?? $movement->product->unit }})</small>
                                 @endif
                             @else
                                 —
