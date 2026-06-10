@@ -7,7 +7,7 @@
     </div>
 
     {{-- Summary Cards --}}
-    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
+    <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:24px;">
         <div class="stat-card">
             <div class="stat-icon" style="background:#EBF4FF;color:#2E75B6;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.423.331" /></svg>
@@ -44,25 +44,41 @@
                 <div class="stat-label">Taux de Marge</div>
             </div>
         </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#F0E6FF;color:#7C3AED;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" /></svg>
+            </div>
+            <div>
+                <div class="stat-value" style="font-size:0.95rem;">{{ $topClientName }}</div>
+                <div class="stat-label">Meilleur client ({{ number_format($topMargin, 0, ',', ' ') }} FCFA, {{ $topClientPct }}%)</div>
+            </div>
+        </div>
     </div>
 
     {{-- Filters --}}
-    <form method="GET" action="{{ route('marge.index') }}" class="table-toolbar" style="display:flex;gap:8px;margin-bottom:16px;">
-        <input type="date" name="date" class="form-input" style="width:160px;" value="{{ request('date') }}">
-        <select name="month" class="form-select" style="width:140px;">
+    <form method="GET" action="{{ route('marge.index') }}" class="table-toolbar" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+        <input type="date" name="date" class="form-input" style="width:150px;" value="{{ request('date') }}">
+        <select name="month" class="form-select" style="width:130px;">
             <option value="">Tous les mois</option>
             @foreach(range(1, 12) as $m)
                 <option value="{{ $m }}" {{ request('month') == $m ? 'selected' : '' }}>{{ DateTime::createFromFormat('!m', $m)->format('F') }}</option>
             @endforeach
         </select>
-        <select name="year" class="form-select" style="width:120px;">
+        <select name="year" class="form-select" style="width:110px;">
             <option value="">Toutes les années</option>
             @for($y = now()->year; $y >= 2024; $y--)
                 <option value="{{ $y }}" {{ request('year') == $y ? 'selected' : '' }}>{{ $y }}</option>
             @endfor
         </select>
+        <select name="product_id" class="form-select" style="width:160px;">
+            <option value="">Tous les produits</option>
+            @foreach($products as $p)
+                <option value="{{ $p->id }}" {{ request('product_id') == $p->id ? 'selected' : '' }}>{{ $p->name }}</option>
+            @endforeach
+        </select>
+        <input type="text" name="client_name" class="form-input" style="width:160px;" placeholder="Nom du client" value="{{ request('client_name') }}">
         <button type="submit" class="btn btn-secondary btn-sm">Filtrer</button>
-        @if(request()->anyFilled(['date', 'month', 'year']))
+        @if(request()->anyFilled(['date', 'month', 'year', 'product_id', 'client_name']))
             <a href="{{ route('marge.index') }}" class="btn btn-secondary btn-sm">Réinitialiser</a>
         @endif
     </form>
@@ -73,6 +89,7 @@
             <thead>
                 <tr>
                     <th>Facture</th>
+                    <th>Client</th>
                     <th>Date</th>
                     <th>Produit</th>
                     <th>Qté</th>
@@ -87,6 +104,7 @@
                 @forelse($items as $item)
                 <tr>
                     <td><a href="{{ route('factures.show', $item->invoice_id) }}" class="fw-medium">{{ $item->invoice_number }}</a></td>
+                    <td>{{ $item->client_name ?? '—' }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->invoice_date)->format('d/m/Y') }}</td>
                     <td>{{ $item->product_name ?? $item->designation }}</td>
                     <td>{{ number_format($item->quantity_sold, 2, ',', ' ') }} {{ $item->unit_sold }}</td>
@@ -103,7 +121,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr class="table-empty"><td colspan="9">Aucune donnée de marge.</td></tr>
+                <tr class="table-empty"><td colspan="10">Aucune donnée de marge.</td></tr>
                 @endforelse
             </tbody>
         </table>
