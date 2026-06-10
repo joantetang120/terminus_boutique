@@ -9,7 +9,94 @@
 
     <form action="{{ route('factures.store') }}" method="POST" x-data="invoiceForm()" @submit="formSubmitting = true">
         @csrf
-        <div style="display:grid;grid-template-columns:60% 40%;gap:24px;">
+        <div style="display:grid;grid-template-columns:40% 60%;gap:24px;">
+            <div style="position:sticky;top:88px;align-self:start;">
+                {{-- Invoice Preview --}}
+                <div class="card" style="margin-bottom:24px;overflow:hidden;">
+                    <h3 style="font-size:1rem;font-weight:600;margin-bottom:16px;">Aperçu de la facture</h3>
+
+                    <div style="border-bottom:2px solid #1e3a8a;padding-bottom:12px;margin-bottom:12px;">
+                        <h2 style="color:#1e3a8a;font-size:1.125rem;font-weight:700;margin:0;">TERMINUS BOUTIQUE</h2>
+                        <div style="font-size:0.75rem;color:#64748b;">Bonamoussadi — Douala</div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;font-size:0.75rem;">
+                        <div>
+                            <div style="color:#64748b;">Client</div>
+                            <div style="font-weight:600;color:#1e293b;" x-text="clientName || '—'"></div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="color:#64748b;">Date</div>
+                            <div style="font-weight:600;color:#1e293b;" x-text="new Date().toLocaleDateString('fr-FR')"></div>
+                        </div>
+                    </div>
+
+                    <table style="width:100%;border-collapse:collapse;font-size:0.6875rem;">
+                        <thead>
+                            <tr style="background:#f8fafc;">
+                                <th style="padding:6px 4px;text-align:left;font-weight:600;color:#475569;">Article</th>
+                                <th style="padding:6px 4px;text-align:center;font-weight:600;color:#475569;width:40px;">Qté</th>
+                                <th style="padding:6px 4px;text-align:right;font-weight:600;color:#475569;width:70px;">P.U.</th>
+                                <th style="padding:6px 4px;text-align:right;font-weight:600;color:#475569;width:80px;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="item in items" :key="item.product_id">
+                                <tr x-show="item.designation">
+                                    <td style="padding:5px 4px;border-top:1px solid #e2e8f0;color:#1e293b;" x-text="item.designation"></td>
+                                    <td style="padding:5px 4px;border-top:1px solid #e2e8f0;text-align:center;color:#1e293b;" x-text="item.quantity_sold"></td>
+                                    <td style="padding:5px 4px;border-top:1px solid #e2e8f0;text-align:right;color:#1e293b;" x-text="formatCurrency(item.unit_price)"></td>
+                                    <td style="padding:5px 4px;border-top:1px solid #e2e8f0;text-align:right;font-weight:600;color:#1e293b;" x-text="formatCurrency((item.quantity_sold || 0) * (item.unit_price || 0))"></td>
+                                </tr>
+                            </template>
+                            <tr x-show="!items.length || !items.some(i => i.designation)">
+                                <td colspan="4" style="padding:16px;text-align:center;color:#94a3b8;font-size:0.6875rem;">Aucun article ajouté</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div style="margin-top:10px;text-align:right;padding-top:8px;border-top:2px solid #1e3a8a;">
+                        <span style="font-size:0.8125rem;color:#64748b;">Total</span>
+                        <div style="font-weight:700;font-size:1.125rem;color:#1e3a8a;" x-text="formatCurrency(total())"></div>
+                    </div>
+
+                    <div x-show="note" style="margin-top:10px;padding:8px;background:#f8fafc;border-radius:4px;font-size:0.6875rem;color:#64748b;">
+                        <strong>Note:</strong> <span x-text="note"></span>
+                    </div>
+                </div>
+
+                {{-- Resume --}}
+                <div class="card">
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        <div style="display:flex;justify-content:space-between;">
+                            <span style="color:#64748B;">Nombre d'articles:</span>
+                            <strong x-text="items.length"></strong>
+                        </div>
+                        <div
+                            style="display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid #E2E8F0;">
+                            <span style="font-weight:600;">Total facture:</span>
+                            <strong x-text="formatCurrency(total())"
+                                style="color:#1ABC9C;font-size:1.125rem;"></strong>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" :disabled="hasAnyPriceErrors()"
+                        :style="{
+                            width: '100%',
+                            marginTop: '20px',
+                            height: '44px',
+                            opacity: hasAnyPriceErrors() ? '0.5' : '1',
+                            cursor: hasAnyPriceErrors() ? 'not-allowed' : 'pointer'
+                        }">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" style="display:inline;vertical-align:middle;margin-right:6px;">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span x-text="hasAnyPriceErrors() ? 'Prix invalide detecte' : 'Enregistrer la facture'"></span>
+                    </button>
+                </div>
+            </div>
+
             <div>
                 <div class="card" style="margin-bottom:24px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -308,93 +395,6 @@
                         <label class="form-label" for="note">Note (optionnel)</label>
                         <textarea class="form-textarea" id="note" name="note" rows="2" x-model="note" @input="markDirty()">{{ old('note') }}</textarea>
                     </div>
-                </div>
-            </div>
-
-            <div style="position:sticky;top:88px;align-self:start;">
-                {{-- Invoice Preview --}}
-                <div class="card" style="margin-bottom:24px;overflow:hidden;">
-                    <h3 style="font-size:1rem;font-weight:600;margin-bottom:16px;">Aperçu de la facture</h3>
-
-                    <div style="border-bottom:2px solid #1e3a8a;padding-bottom:12px;margin-bottom:12px;">
-                        <h2 style="color:#1e3a8a;font-size:1.125rem;font-weight:700;margin:0;">TERMINUS BOUTIQUE</h2>
-                        <div style="font-size:0.75rem;color:#64748b;">Bonamoussadi — Douala</div>
-                    </div>
-
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;font-size:0.75rem;">
-                        <div>
-                            <div style="color:#64748b;">Client</div>
-                            <div style="font-weight:600;color:#1e293b;" x-text="clientName || '—'"></div>
-                        </div>
-                        <div style="text-align:right;">
-                            <div style="color:#64748b;">Date</div>
-                            <div style="font-weight:600;color:#1e293b;" x-text="new Date().toLocaleDateString('fr-FR')"></div>
-                        </div>
-                    </div>
-
-                    <table style="width:100%;border-collapse:collapse;font-size:0.6875rem;">
-                        <thead>
-                            <tr style="background:#f8fafc;">
-                                <th style="padding:6px 4px;text-align:left;font-weight:600;color:#475569;">Article</th>
-                                <th style="padding:6px 4px;text-align:center;font-weight:600;color:#475569;width:40px;">Qté</th>
-                                <th style="padding:6px 4px;text-align:right;font-weight:600;color:#475569;width:70px;">P.U.</th>
-                                <th style="padding:6px 4px;text-align:right;font-weight:600;color:#475569;width:80px;">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template x-for="item in items" :key="item.product_id">
-                                <tr x-show="item.designation">
-                                    <td style="padding:5px 4px;border-top:1px solid #e2e8f0;color:#1e293b;" x-text="item.designation"></td>
-                                    <td style="padding:5px 4px;border-top:1px solid #e2e8f0;text-align:center;color:#1e293b;" x-text="item.quantity_sold"></td>
-                                    <td style="padding:5px 4px;border-top:1px solid #e2e8f0;text-align:right;color:#1e293b;" x-text="formatCurrency(item.unit_price)"></td>
-                                    <td style="padding:5px 4px;border-top:1px solid #e2e8f0;text-align:right;font-weight:600;color:#1e293b;" x-text="formatCurrency((item.quantity_sold || 0) * (item.unit_price || 0))"></td>
-                                </tr>
-                            </template>
-                            <tr x-show="!items.length || !items.some(i => i.designation)">
-                                <td colspan="4" style="padding:16px;text-align:center;color:#94a3b8;font-size:0.6875rem;">Aucun article ajouté</td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <div style="margin-top:10px;text-align:right;padding-top:8px;border-top:2px solid #1e3a8a;">
-                        <span style="font-size:0.8125rem;color:#64748b;">Total</span>
-                        <div style="font-weight:700;font-size:1.125rem;color:#1e3a8a;" x-text="formatCurrency(total())"></div>
-                    </div>
-
-                    <div x-show="note" style="margin-top:10px;padding:8px;background:#f8fafc;border-radius:4px;font-size:0.6875rem;color:#64748b;">
-                        <strong>Note:</strong> <span x-text="note"></span>
-                    </div>
-                </div>
-
-                {{-- Resume --}}
-                <div class="card">
-                    <div style="display:flex;flex-direction:column;gap:12px;">
-                        <div style="display:flex;justify-content:space-between;">
-                            <span style="color:#64748B;">Nombre d'articles:</span>
-                            <strong x-text="items.length"></strong>
-                        </div>
-                        <div
-                            style="display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid #E2E8F0;">
-                            <span style="font-weight:600;">Total facture:</span>
-                            <strong x-text="formatCurrency(total())"
-                                style="color:#1ABC9C;font-size:1.125rem;"></strong>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary" :disabled="hasAnyPriceErrors()"
-                        :style="{
-                            width: '100%',
-                            marginTop: '20px',
-                            height: '44px',
-                            opacity: hasAnyPriceErrors() ? '0.5' : '1',
-                            cursor: hasAnyPriceErrors() ? 'not-allowed' : 'pointer'
-                        }">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" style="display:inline;vertical-align:middle;margin-right:6px;">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                        <span x-text="hasAnyPriceErrors() ? 'Prix invalide detecte' : 'Enregistrer la facture'"></span>
-                    </button>
                 </div>
             </div>
         </div>
