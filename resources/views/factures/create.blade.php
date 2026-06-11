@@ -623,16 +623,16 @@
                         this.clientName = draft.client_name || '';
                         this.note = draft.note || '';
 
-                        // Restore items
+                        // Restore items with all data set before push
                         this.items = [];
                         if (draft.items && draft.items.length > 0) {
                             draft.items.forEach(itemData => {
-                                const item = createEmptyItem();
                                 const product = productsData.find(p => p.id == itemData.product_id);
+                                const item = createEmptyItem();
                                 item.product_id = itemData.product_id;
                                 item.product_search = itemData.product_search || (product ? product.name : '');
                                 item.designation = itemData.designation;
-                                item.unit_sold = itemData.unit_sold;
+                                item.unit_sold = itemData.unit_sold || '';
                                 item.quantity_sold = itemData.quantity_sold;
                                 item.unit_price = itemData.unit_price;
                                 item.total_price = itemData.total_price;
@@ -642,18 +642,31 @@
                                 item.hasPriceError = false;
                                 this.items.push(item);
                                 if (product && item.unit_sold) {
-                                    this.updatePriceInfo(this.items.length - 1);
-                                    this.validatePrice(this.items.length - 1);
+                                    this.updateUnitPrice(this.items.length - 1);
                                 }
                             });
                         }
 
-                        this.loadingDraft = false;
-                        this.isDirty = false;
+                        // Wait for Alpine to finish rendering (including x-for options)
+                        this.$nextTick(() => {
+                            this.items.forEach((item) => {
+                                if (item.productData && item.unit_sold) {
+                                    // Toggle through empty string to force x-model watcher
+                                    const saved = item.unit_sold;
+                                    item.unit_sold = '';
+                                    this.$nextTick(() => {
+                                        item.unit_sold = saved;
+                                    });
+                                }
+                            });
+                            this.loadingDraft = false;
+                            this.isDirty = false;
+                            this.showDraftModal = false;
+                        });
                     } catch (e) {
                         localStorage.removeItem('facture_draft');
+                        this.showDraftModal = false;
                     }
-                    this.showDraftModal = false;
                 },
 
                 discardDraft() {
@@ -694,8 +707,8 @@
                 restoreFromOld(oldItems) {
                     this.items = [];
                     oldItems.forEach(itemData => {
-                        const item = createEmptyItem();
                         const product = productsData.find(p => p.id == itemData.product_id);
+                        const item = createEmptyItem();
                         item.product_id = itemData.product_id;
                         item.product_search = product ? product.name : (itemData.designation || '');
                         item.designation = itemData.designation || '';
@@ -706,13 +719,26 @@
                         item.conversion_rate = itemData.conversion_rate || 1;
                         item.quantity_deducted = Math.round((itemData.quantity_sold || 0) * (itemData.conversion_rate || 1));
                         item.productData = product || null;
+                        item.hasPriceError = false;
                         this.items.push(item);
                         if (product && item.unit_sold) {
                             this.updatePriceInfo(this.items.length - 1);
                             this.validatePrice(this.items.length - 1);
                         }
                     });
-                    this.isDirty = false;
+
+                    this.$nextTick(() => {
+                        this.items.forEach((item) => {
+                            if (item.productData && item.unit_sold) {
+                                const saved = item.unit_sold;
+                                item.unit_sold = '';
+                                this.$nextTick(() => {
+                                    item.unit_sold = saved;
+                                });
+                            }
+                        });
+                        this.isDirty = false;
+                    });
                 },
 
                 // ── Original methods ──

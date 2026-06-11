@@ -53,6 +53,16 @@ class DashboardController extends Controller
             ->latest()
             ->get();
 
+        $stockValue = Product::where('is_active', true)
+            ->selectRaw('SUM(
+                CASE
+                    WHEN purchase_unit IS NOT NULL AND purchase_conversion_rate > 0
+                    THEN (purchase_price / purchase_conversion_rate) * current_stock
+                    ELSE purchase_price * current_stock
+                END
+            ) as total_value')
+            ->value('total_value') ?? 0;
+
         // Invoice stats for dashboard widget
         $todayTotal = Invoice::whereDate('created_at', $today)
             ->whereNotIn('status', ['ANNULEE'])
@@ -93,7 +103,8 @@ class DashboardController extends Controller
             'todayExpenses',
             'recentInvoices',
             'unpaidInvoices',
-            'invoiceStats'
+            'invoiceStats',
+            'stockValue'
         ));
     }
 }
