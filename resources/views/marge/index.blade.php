@@ -83,6 +83,45 @@
         @endif
     </form>
 
+    {{-- Top 10 Clients --}}
+    <div class="card" style="margin-bottom:24px;">
+        <h3 style="font-size:1rem;font-weight:600;margin-bottom:16px;">Top 10 clients (par marge)</h3>
+        <div class="table-wrapper" style="border:none;box-shadow:none;">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:40px;">#</th>
+                        <th>Client</th>
+                        <th style="text-align:right;">CA</th>
+                        <th style="text-align:right;">Coût</th>
+                        <th style="text-align:right;">Marge</th>
+                        <th style="text-align:right;width:80px;">Taux</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($topClients as $i => $client)
+                    <tr>
+                        <td style="color:#94a3b8;font-weight:600;">{{ $i + 1 }}</td>
+                        <td style="font-weight:500;">{{ $client->client_name }}</td>
+                        <td style="text-align:right;">{{ number_format($client->total_ca, 0, ',', ' ') }}</td>
+                        <td style="text-align:right;">{{ number_format($client->total_cost, 0, ',', ' ') }}</td>
+                        <td style="text-align:right;color:{{ $client->margin >= 0 ? '#1A7A4A' : '#C0392B' }};font-weight:600;">
+                            {{ number_format($client->margin, 0, ',', ' ') }}
+                        </td>
+                        <td style="text-align:right;">
+                            <span class="badge {{ $client->margin_pct >= 0 ? 'badge-success' : 'badge-danger' }}">
+                                {{ $client->margin_pct }}%
+                            </span>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr class="table-empty"><td colspan="6">Aucun client.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     {{-- Table --}}
     <div class="table-wrapper">
         <table>

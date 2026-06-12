@@ -62,7 +62,7 @@ class MargeController extends Controller
         $totalMargin = $totalCa - $totalCost;
         $marginRate = $totalCa > 0 ? round($totalMargin / $totalCa * 100, 2) : 0;
 
-        // Top client by margin (subquery approach to avoid ONLY_FULL_GROUP_BY)
+        // Top 10 clients by margin (subquery approach to avoid ONLY_FULL_GROUP_BY)
         $topClientSql = 'SELECT i.client_name, ii.total_price, COALESCE(('
             . 'SELECT sm.total_cost FROM stock_movements sm'
             . ' WHERE sm.reference_type = "invoice"'
@@ -84,21 +84,30 @@ class MargeController extends Controller
         if ($request->filled('product_id')) { $topClientSql .= ' AND ii.product_id = ?'; $bindings[] = $request->product_id; }
         if ($request->filled('client_name')) { $topClientSql .= ' AND i.client_name LIKE ?'; $bindings[] = '%' . $request->client_name . '%'; }
 
-        $topClient = DB::selectOne(
+        $topClients = DB::select(
             'SELECT t.client_name, SUM(t.total_price) as total_ca, SUM(t.cost) as total_cost'
             . ' FROM (' . $topClientSql . ') t'
             . ' GROUP BY t.client_name'
             . ' ORDER BY SUM(t.total_price) - SUM(t.cost) DESC'
-            . ' LIMIT 1',
+            . ' LIMIT 10',
             $bindings
         );
 
-        if ($topClient) {
-            $topCa = (float) $topClient->total_ca;
-            $topCost = (float) $topClient->total_cost;
-            $topMargin = $topCa - $topCost;
-            $topClientPct = $topCa > 0 ? round($topMargin / $topCa * 100, 2) : 0;
-            $topClientName = $topClient->client_name;
+        $topClients = array_map(function ($c) {
+            $c->margin = (float) $c->total_ca - (float) $c->total_cost;
+            $c->margin_pct = (float) $c->total_ca > 0
+                ? round($c->margin / (float) $c->total_ca * 100, 2)
+                : 0;
+            $c->total_ca = (float) $c->total_ca;
+            $c->total_cost = (float) $c->total_cost;
+            return $c;
+        }, $topClients);
+
+        $first = $topClients[0] ?? null;
+        if ($first) {
+            $topClientName = $first->client_name;
+            $topMargin = $first->margin;
+            $topClientPct = $first->margin_pct;
         } else {
             $topClientName = '—';
             $topMargin = 0;
@@ -110,7 +119,7 @@ class MargeController extends Controller
 
         return view('marge.index', compact(
             'items', 'totalCa', 'totalCost', 'totalMargin', 'marginRate',
-            'topClientName', 'topMargin', 'topClientPct', 'products'
+            'topClientName', 'topMargin', 'topClientPct', 'products', 'topClients'
         ));
     }
 }
