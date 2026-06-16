@@ -28,8 +28,8 @@ class ReportController extends Controller implements HasMiddleware
     public function export(Request $request)
 {
     $request->validate([
-        'source' => 'required|in:ecritures,factures,depenses',
-        'format' => 'required|in:csv,pdf',
+        'source' => 'required|in:ecritures,factures,depenses,produits',
+        'format' => 'required|in:csv,pdf,docx',
         'from'   => 'nullable|date',
         'to'     => 'nullable|date|after_or_equal:from',
         'status' => 'nullable|string',
@@ -58,6 +58,16 @@ class ReportController extends Controller implements HasMiddleware
         activity()->causedBy(Auth::user())
             ->withProperties(['filters' => $filters])
             ->log("A exporté les données de {$request->source} au format pdf");
+
+        return $response;
+    }
+
+    if ($request->format === 'docx') {
+        $response = $this->exportService->generateDocx($filters['source'], $filters, $fileName);
+
+        activity()->causedBy(Auth::user())
+            ->withProperties(['filters' => $filters])
+            ->log("A exporté les données de {$request->source} au format docx");
 
         return $response;
     }

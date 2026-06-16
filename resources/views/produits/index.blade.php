@@ -10,6 +10,17 @@
             @can('product.create')
             <a href="{{ route('produits.create') }}" class="btn btn-primary">+ Nouveau produit</a>
             @endcan
+            <div style="display:flex;gap:6px;">
+                <a href="{{ route('reports.export', array_merge(request()->query(), ['source' => 'produits', 'format' => 'pdf'])) }}" class="btn btn-secondary btn-sm">
+                    PDF
+                </a>
+                <a href="{{ route('reports.export', array_merge(request()->query(), ['source' => 'produits', 'format' => 'docx'])) }}" class="btn btn-secondary btn-sm">
+                    Word
+                </a>
+                <a href="{{ route('reports.export', array_merge(request()->query(), ['source' => 'produits', 'format' => 'csv'])) }}" class="btn btn-secondary btn-sm">
+                    CSV
+                </a>
+            </div>
         </div>
     </div>
 
