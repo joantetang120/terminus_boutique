@@ -44,7 +44,7 @@ class ProduitController extends Controller
             $query->lowStock();
         }
 
-        $products = $query->with('creator')->orderBy('name')->paginate(20);
+        $products = $query->with('creator')->orderBy('name')->paginate(20)->withQueryString();
 
         activity('product')
             ->log('Consultation de la liste des produits');
