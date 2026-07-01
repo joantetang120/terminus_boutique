@@ -64,6 +64,11 @@
                     <td>{{ $product->unit }}</td>
                     <td>
                         {{ number_format($product->current_stock, 0, ',', ' ') }}
+                        @if($product->purchase_unit && $product->purchase_conversion_rate)
+                            <br><small style="color:#64748B;font-size:0.7rem;">
+                                ({{ floor($product->current_stock / $product->purchase_conversion_rate) }} {{ $product->purchase_unit }})
+                            </small>
+                        @endif
                         @if($product->sale_unit && $product->sale_conversion_rate)
                             <br><small style="color:#64748B;font-size:0.7rem;">
                                 ({{ floor($product->current_stock / $product->sale_conversion_rate) }} {{ $product->sale_unit }})
